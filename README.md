@@ -82,22 +82,33 @@ http://localhost:5000 (or access it via LAN if running on a Raspberry Pi or serv
 
 ### Web Interface Features
 Edit config: Set your callsign, passcode, server and port
+
 Add beacon or object:
+
 Name: max 9 characters (for APRS objects)
-Position: latitude and longitude separated by comma (e.g., 52.1234,8.6543)
+
+Position: latitude and longitude separated by comma (e.g., 52.2450,8.9057)
+
 Symbol: two-character APRS symbol (e.g., /E, \E)
+
 Text: description (max 43 characters recommended)
+
 Type: choose beacon or object
+
 Toggle Active: Enable/disable specific entries
+
 Send Now: Immediately transmit a beacon or object
+
 Edit/Delete: Modify or remove existing entries
-🔁 Auto Transmission
+
+## 🔁 Auto Transmission
 
 A background thread automatically transmits all active entries every 5 minutes.
 
 Change interval in app.py:
 
 SEND_INTERVAL = 300  # seconds
+
 ## 🛠️ Notes
 
 APRS object names are limited to 9 characters

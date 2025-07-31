@@ -14,15 +14,21 @@ A lightweight Flask web application to manage and send APRS position beacons and
 
 
 ### 1. Clone the repository
+```bash
 git clone https://github.com/HochdruckHummer/lightAPRSinjector.git
 cd aprs-beacon-manager
-
+```
 ### 2. (Optional but recommended) Create a virtual environment
+```bash
 python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
-
+```
 ### 3. Install dependencies
+```bash
+
 pip install flask aprslib
+```
+
 
 ## 4 Configuration
 Create a file named config.json in the same directory as app.py:
@@ -38,6 +44,7 @@ Create a file named config.json in the same directory as app.py:
 ```
 
 callsign: Your full APRS callsign (e.g., DL1ABC-9 or DL1ABC)
+
 passcode: Your APRS-IS passcode (generate it here)
 server: Use euro.aprs2.net or another APRS-IS server
 port: Default is 14580

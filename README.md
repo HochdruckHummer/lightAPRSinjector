@@ -44,14 +44,13 @@ Create a file named config.json in the same directory as app.py:
 ```
 
 callsign: Your full APRS callsign (e.g., DL1ABC-9 or DL1ABC)
-
 passcode: Your APRS-IS passcode (generate it here)
 server: Use euro.aprs2.net or another APRS-IS server
 port: Default is 14580
 If beacons.json does not exist, it will be created automatically when adding your first beacon.
 
 Example format for beacons.json:
-
+```json
 [
   {
     "name": "Home",
@@ -62,7 +61,7 @@ Example format for beacons.json:
     "active": true
   }
 ]
-
+```
 ## 🖥️ Usage
 
 Start the app:

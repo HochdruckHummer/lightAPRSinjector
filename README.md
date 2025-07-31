@@ -36,17 +36,17 @@ Create a file named config.json in the same directory as app.py:
 
 ```json
 {
-  "callsign": "DL1ABC",
+  "callsign": "DL8YDP",
   "passcode": "12345",
   "server": "euro.aprs2.net",
   "port": 14580
 }
 ```
 
-callsign: Your full APRS callsign (e.g., DL1ABC-9 or DL1ABC)
+callsign: Your full APRS callsign (e.g., DL8YDP or DL8YDP-9)
 
 
-passcode: Your APRS-IS passcode (generate it here)
+passcode: Your APRS-IS passcode (generate it [here](https://pages.github.com/](https://apps.magicbug.co.uk/passcode/)))
 
 
 server: Use euro.aprs2.net or another APRS-IS server
@@ -63,7 +63,7 @@ Example format for beacons.json:
   {
     "name": "Home",
     "text": "DL8YDP Home QTH",
-    "position": "52.1234,8.6543",
+    "position": "52.2450,8.9057",
     "symbol": "/-",
     "type": "beacon",
     "active": true
@@ -112,7 +112,9 @@ SEND_INTERVAL = 300  # seconds
 ## 🛠️ Notes
 
 APRS object names are limited to 9 characters
+
 Symbol codes consist of two characters: / or \ plus the actual symbol (e.g., /E)
+
 The first character determines the symbol table; the second is the symbol itself
 
 ## 📜 License

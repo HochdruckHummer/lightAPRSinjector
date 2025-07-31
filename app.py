@@ -134,7 +134,9 @@ threading.Thread(target=auto_sender, daemon=True).start()
 HTML = """
 <!doctype html>
 <title>lightAPRSinjector</title>
-<h1>APRS Beacon and Object Manager by DL8YDP</h1>
+<h1>lightAPRSinjector</h1>
+<h2>APRS Beacon and Object Manager by DL8YDP</h2>
+
 
 <h2>Configuration</h2>
 <form method="post" action="/config">

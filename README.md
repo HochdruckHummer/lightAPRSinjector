@@ -46,7 +46,7 @@ Create a file named config.json in the same directory as app.py:
 callsign: Your full APRS callsign (e.g., DL8YDP or DL8YDP-9)
 
 
-passcode: Your APRS-IS passcode (generate it [here](https://pages.github.com/](https://apps.magicbug.co.uk/passcode/)))
+passcode: Your APRS-IS passcode (generate it [here](https://apps.magicbug.co.uk/passcode/))
 
 
 server: Use euro.aprs2.net or another APRS-IS server

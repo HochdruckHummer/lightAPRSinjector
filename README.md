@@ -13,11 +13,11 @@ A lightweight Flask web application to manage and send APRS position beacons and
 ## 🚀 Installation and Setup
 
 
-# 1. Clone the repository
-git clone https://github.com/YOUR_USERNAME/aprs-beacon-manager.git
+### 1. Clone the repository
+git clone https://github.com/HochdruckHummer/lightAPRSinjector.git
 cd aprs-beacon-manager
 
-# 2. (Optional) Create a virtual environment
+# 2. (Optional but recommended) Create a virtual environment
 python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 

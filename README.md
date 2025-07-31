@@ -114,7 +114,8 @@ SEND_INTERVAL = 300  # seconds
 APRS object names are limited to 9 characters
 Symbol codes consist of two characters: / or \ plus the actual symbol (e.g., /E)
 The first character determines the symbol table; the second is the symbol itself
-📜 License
+
+## 📜 License
 
 This project is licensed under the MIT License.
 

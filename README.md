@@ -17,14 +17,14 @@ A lightweight Flask web application to manage and send APRS position beacons and
 git clone https://github.com/HochdruckHummer/lightAPRSinjector.git
 cd aprs-beacon-manager
 
-# 2. (Optional but recommended) Create a virtual environment
+### 2. (Optional but recommended) Create a virtual environment
 python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-# 3. Install dependencies
+### 3. Install dependencies
 pip install flask aprslib
 
-# 4 Configuration
+## 4 Configuration
 Create a file named config.json in the same directory as app.py:
 
 {
@@ -53,3 +53,43 @@ Example format for beacons.json:
     "active": true
   }
 ]
+
+## 🖥️ Usage
+
+Start the app:
+
+python app.py
+Open the app in your browser:
+http://localhost:5000 (or access it via LAN if running on a Raspberry Pi or server)
+
+Web Interface Features
+Edit config: Set your callsign, passcode, server and port
+Add beacon or object:
+Name: max 9 characters (for APRS objects)
+Position: latitude and longitude separated by comma (e.g., 52.1234,8.6543)
+Symbol: two-character APRS symbol (e.g., /E, \E)
+Text: description (max 43 characters recommended)
+Type: choose beacon or object
+Toggle Active: Enable/disable specific entries
+Send Now: Immediately transmit a beacon or object
+Edit/Delete: Modify or remove existing entries
+🔁 Auto Transmission
+
+A background thread automatically transmits all active entries every 5 minutes.
+
+Change interval in app.py:
+
+SEND_INTERVAL = 300  # seconds
+## 🛠️ Notes
+
+APRS object names are limited to 9 characters
+Symbol codes consist of two characters: / or \ plus the actual symbol (e.g., /E)
+The first character determines the symbol table; the second is the symbol itself
+📜 License
+
+This project is licensed under the MIT License.
+
+## 📡 Author
+
+Created by DL8YDP
+Pull requests and contributions are welcome!

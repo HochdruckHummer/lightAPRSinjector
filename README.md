@@ -73,12 +73,14 @@ Example format for beacons.json:
 ## 🖥️ Usage
 
 Start the app:
-
+```bash
 python app.py
+```
+
 Open the app in your browser:
 http://localhost:5000 (or access it via LAN if running on a Raspberry Pi or server)
 
-Web Interface Features
+### Web Interface Features
 Edit config: Set your callsign, passcode, server and port
 Add beacon or object:
 Name: max 9 characters (for APRS objects)

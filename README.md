@@ -1,14 +1,14 @@
 # lightAPRSinjector - a lightweight APRS Beacon and Object Manager by DL8YDP
 
-A lightweight Flask web application to manage and send APRS position beacons and objects via APRS-IS. Designed for amateur radio operators, it offers a simple (ugly) web interface to add, edit, activate, and send APRS data using configurable symbols (e.g., `/E` or `\E`), coordinates, and texts.
+A lightweight Flask web application to manage and send APRS position beacons and objects via APRS-IS. Designed for amateur radio operators, it offers a modern and simple (Bootstrap) web interface to add, edit, activate, and send APRS data using configurable symbols (e.g., `/E` or `\E`), coordinates, and texts.
 
 ## ✨ Features
 
 - Send APRS position beacons or objects over APRS-IS  
-- Symbol support using `/` and `\` tables (e.g., `/E` = Eyeball, `\E` = Elevator)  
+- Symbol support using `/` and `\` tables (e.g., `/E` = Eyeball, `\E` = Smokestack)  
 - Web interface for configuration and beacon management  
 - Supports manual and scheduled transmissions (every 5 minutes)  
-- Built with Flask and `aprslib`  
+- Built with Flask, `aprslib`  and Bootstrap.
 
 ## 🚀 Installation and Setup
 

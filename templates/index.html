@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}lightAPRSinjector{% endblock %}
+
+{% block content %}
+
+<!-- Konfigurationslink und Theme-Toggle -->
+<div class="mb-4">
+<a href="{{ url_for('new_beacon') }}" class="btn btn-success mb-3">➕ Create new beacon / object</a>
+</div>
+
+<!-- Formular zum Hinzufügen -->
+
+
+
+
+<!-- Liste der aktiven Einträge -->
+<div class="card">
+  <div class="card-header">Current beacons and objects</div>
+  <ul class="list-group list-group-flush">
+    {% for b in beacons %}
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+      <div>
+        <strong>{{ b.name }}</strong>: {{ b.text }} ({{ b.position }})<br>
+        Symbol: <code>{{ b.symbol }}</code> – <em>{{ "Object" if b.type == "object" else "Beacon" }}</em>
+      </div>
+      <div>
+        <form method="post" action="/toggle/{{ loop.index0 }}" class="d-inline">
+          <button class="btn btn-sm btn-warning">{{ "🔕 Deactivate" if b.active else "🔔 Activate" }}</button>
+        </form>
+        <form method="post" action="/send/{{ loop.index0 }}" class="d-inline">
+          <button class="btn btn-sm btn-info">📡 Send now</button>
+        </form>
+        <a href="{{ url_for('edit_beacon', idx=loop.index0) }}" class="btn btn-sm btn-secondary">✏️ Edit</a>
+        <form method="post" action="/delete/{{ loop.index0 }}" class="d-inline" onsubmit="return confirm('Do you really want to delete this entry?');">
+          <button class="btn btn-sm btn-danger">🗑️ Delete</button>
+        </form>
+      </div>
+    </li>
+    {% else %}
+    <li class="list-group-item">No beacons or objects available.</li>
+    {% endfor %}
+  </ul>
+</div>
+<br>
+<br>
+<p>Version 1.0</p>
+<a href="https://github.com/HochdruckHummer/lightAPRSinjector" target="_blank">Github</a> <br>
+<a href="https://www.qrz.com/db/DL8YDP" target="_blank">DL8YDP on QRZ.com</a> <br>
+<a href="https://dl8ydp.de" target="_blank">dl8ydp.de</a> <br>
+
+{% endblock %}

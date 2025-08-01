@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Create new beacon or object{% endblock %}
+
+{% block content %}
+<h1>Create new beacon or object</h1>
+
+<form method="post">
+  <div class="mb-3">
+    <label class="form-label">Name</label>
+    <input name="name" class="form-control">
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Text</label>
+    <input name="text" class="form-control">
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Position (Lat,Lon)</label>
+    <input name="position" class="form-control">
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Symbol</label>
+    <input name="symbol" class="form-control" value="/">
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Type</label>
+    <select name="type" class="form-select">
+      <option value="beacon">Beacon</option>
+      <option value="object">Object</option>
+    </select>
+  </div>
+  <div class="form-check mb-3">
+    <input type="checkbox" name="active" class="form-check-input" id="active" checked>
+    <label for="active" class="form-check-label">Active</label>
+  </div>
+  <button type="submit" class="btn btn-success">Add</button>
+  <a href="{{ url_for('index') }}" class="btn btn-secondary">Back</a>
+</form>
+{% endblock %}

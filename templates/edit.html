@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Edit items{% endblock %}
+
+{% block content %}
+<h1>Edit APRS item</h1>
+
+<form method="post" action="/edit/{{ index }}">
+  <div class="mb-3">
+    <label class="form-label">Name</label>
+    <input name="name" value="{{ beacon.name }}" class="form-control">
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Text</label>
+    <input name="text" value="{{ beacon.text }}" class="form-control">
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Position (Lat,Lon)</label>
+    <input name="position" value="{{ beacon.position }}" class="form-control">
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Symbol</label>
+    <input name="symbol" value="{{ beacon.symbol }}" class="form-control">
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Type</label>
+    <select name="type" class="form-select">
+      <option value="beacon" {% if beacon.type == 'beacon' %}selected{% endif %}>Beacon</option>
+      <option value="object" {% if beacon.type == 'object' %}selected{% endif %}>Object</option>
+    </select>
+  </div>
+  <div class="form-check mb-3">
+    <input type="checkbox" name="active" class="form-check-input" id="active" {% if beacon.active %}checked{% endif %}>
+    <label for="active" class="form-check-label">Active</label>
+  </div>
+  <button type="submit" class="btn btn-primary">Save</button>
+  <a href="{{ url_for('index') }}" class="btn btn-secondary">Back</a>
+</form>
+{% endblock %}

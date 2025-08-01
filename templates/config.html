@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Konfiguration{% endblock %}
+
+{% block content %}
+<h1>Configuration</h1>
+
+<form method="post">
+  <div class="mb-3">
+    <label for="callsign" class="form-label">Callsign</label>
+    <input type="text" name="callsign" id="callsign" class="form-control" value="{{ config.callsign }}">
+  </div>
+  <div class="mb-3">
+    <label for="passcode" class="form-label">Passcode</label>
+    <input type="text" name="passcode" id="passcode" class="form-control" value="{{ config.passcode }}">
+  </div>
+  <div class="mb-3">
+    <label for="server" class="form-label">Server</label>
+    <input type="text" name="server" id="server" class="form-control" value="{{ config.server }}">
+  </div>
+  <div class="mb-3">
+    <label for="port" class="form-label">Port</label>
+    <input type="number" name="port" id="port" class="form-control" value="{{ config.port }}">
+  </div>
+  <button type="submit" class="btn btn-primary">Save</button>
+  <a href="{{ url_for('index') }}" class="btn btn-secondary">Back</a>
+</form>
+{% endblock %}

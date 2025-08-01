@@ -1,39 +1,651 @@
 {% extends "base.html" %}
-
-{% block title %}Create new beacon or object{% endblock %}
+{% block title %}Neue APRS-Bake oder Objekt{% endblock %}
 
 {% block content %}
-<h1>Create new beacon or object</h1>
+
+<<style>
+  #symbol-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+    gap: 8px;
+    max-width: 100%;
+  }
+
+  .symbol-choice {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    cursor: pointer;
+    border: 2px solid transparent;
+    border-radius: 4px;
+  }
+
+  .symbol-choice.selected {
+    border-color: #0d6efd; /* Bootstrap primary */
+  }
+</style>
+
+<h1>Neue APRS-Bake oder Objekt anlegen</h1>
 
 <form method="post">
   <div class="mb-3">
-    <label class="form-label">Name</label>
-    <input name="name" class="form-control">
+    <label for="name" class="form-label">Name</label>
+    <input type="text" class="form-control" id="name" name="name">
   </div>
+
   <div class="mb-3">
-    <label class="form-label">Text</label>
-    <input name="text" class="form-control">
+    <label for="text" class="form-label">Text</label>
+    <input type="text" class="form-control" id="text" name="text">
   </div>
+
   <div class="mb-3">
-    <label class="form-label">Position (Lat,Lon)</label>
-    <input name="position" class="form-control">
+    <label for="position" class="form-label">Position (Lat,Lon)</label>
+    <input type="text" class="form-control" id="position" name="position">
   </div>
+
   <div class="mb-3">
-    <label class="form-label">Symbol</label>
-    <input name="symbol" class="form-control" value="/">
+    <label class="form-label">Symbol auswählen</label><br>
+    <input type="hidden" name="symbol" id="symbol">
+    <div id="symbol-grid">
+          <div class="col">
+          <img src="/static/symbols/symbols001.png" data-symbol="/!" class="img-thumbnail symbol-choice" title="/! symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols002.png" data-symbol="/&quot;" class="img-thumbnail symbol-choice" title="/&quot; symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols003.png" data-symbol="/#" class="img-thumbnail symbol-choice" title="/# symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols004.png" data-symbol="/$" class="img-thumbnail symbol-choice" title="/$ symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols005.png" data-symbol="/%" class="img-thumbnail symbol-choice" title="/% symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols006.png" data-symbol="/&amp;" class="img-thumbnail symbol-choice" title="/&amp; symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols007.png" data-symbol="/&#x27;" class="img-thumbnail symbol-choice" title="/&#x27; symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols008.png" data-symbol="/(" class="img-thumbnail symbol-choice" title="/( symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols009.png" data-symbol="/)" class="img-thumbnail symbol-choice" title="/) symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols010.png" data-symbol="/*" class="img-thumbnail symbol-choice" title="/* symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols011.png" data-symbol="/+" class="img-thumbnail symbol-choice" title="/+ symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols012.png" data-symbol="/," class="img-thumbnail symbol-choice" title="/, symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols013.png" data-symbol="/-" class="img-thumbnail symbol-choice" title="/- symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols014.png" data-symbol="/." class="img-thumbnail symbol-choice" title="/. symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols015.png" data-symbol="//" class="img-thumbnail symbol-choice" title="// symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols016.png" data-symbol="/0" class="img-thumbnail symbol-choice" title="/0 symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols017.png" data-symbol="/1" class="img-thumbnail symbol-choice" title="/1 symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols018.png" data-symbol="/2" class="img-thumbnail symbol-choice" title="/2 symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols019.png" data-symbol="/3" class="img-thumbnail symbol-choice" title="/3 symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols020.png" data-symbol="/4" class="img-thumbnail symbol-choice" title="/4 symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols021.png" data-symbol="/5" class="img-thumbnail symbol-choice" title="/5 symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols022.png" data-symbol="/6" class="img-thumbnail symbol-choice" title="/6 symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols023.png" data-symbol="/7" class="img-thumbnail symbol-choice" title="/7 symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols024.png" data-symbol="/8" class="img-thumbnail symbol-choice" title="/8 symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols025.png" data-symbol="/9" class="img-thumbnail symbol-choice" title="/9 symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols026.png" data-symbol="/:" class="img-thumbnail symbol-choice" title="/: symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols027.png" data-symbol="/;" class="img-thumbnail symbol-choice" title="/; symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols028.png" data-symbol="/&lt;" class="img-thumbnail symbol-choice" title="/&lt; symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols029.png" data-symbol="/=" class="img-thumbnail symbol-choice" title="/= symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols030.png" data-symbol="/&gt;" class="img-thumbnail symbol-choice" title="/&gt; symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols031.png" data-symbol="/?" class="img-thumbnail symbol-choice" title="/? symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols032.png" data-symbol="/@" class="img-thumbnail symbol-choice" title="/@ symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols033.png" data-symbol="/A" class="img-thumbnail symbol-choice" title="/A symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols034.png" data-symbol="/B" class="img-thumbnail symbol-choice" title="/B symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols035.png" data-symbol="/C" class="img-thumbnail symbol-choice" title="/C symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols036.png" data-symbol="/D" class="img-thumbnail symbol-choice" title="/D symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols037.png" data-symbol="/E" class="img-thumbnail symbol-choice" title="/E symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols038.png" data-symbol="/F" class="img-thumbnail symbol-choice" title="/F symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols039.png" data-symbol="/G" class="img-thumbnail symbol-choice" title="/G symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols040.png" data-symbol="/H" class="img-thumbnail symbol-choice" title="/H symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols041.png" data-symbol="/I" class="img-thumbnail symbol-choice" title="/I symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols042.png" data-symbol="/J" class="img-thumbnail symbol-choice" title="/J symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols043.png" data-symbol="/K" class="img-thumbnail symbol-choice" title="/K symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols044.png" data-symbol="/L" class="img-thumbnail symbol-choice" title="/L symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols045.png" data-symbol="/M" class="img-thumbnail symbol-choice" title="/M symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols046.png" data-symbol="/N" class="img-thumbnail symbol-choice" title="/N symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols047.png" data-symbol="/O" class="img-thumbnail symbol-choice" title="/O symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols048.png" data-symbol="/P" class="img-thumbnail symbol-choice" title="/P symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols049.png" data-symbol="/Q" class="img-thumbnail symbol-choice" title="/Q symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols050.png" data-symbol="/R" class="img-thumbnail symbol-choice" title="/R symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols051.png" data-symbol="/S" class="img-thumbnail symbol-choice" title="/S symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols052.png" data-symbol="/T" class="img-thumbnail symbol-choice" title="/T symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols053.png" data-symbol="/U" class="img-thumbnail symbol-choice" title="/U symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols054.png" data-symbol="/V" class="img-thumbnail symbol-choice" title="/V symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols055.png" data-symbol="/W" class="img-thumbnail symbol-choice" title="/W symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols056.png" data-symbol="/X" class="img-thumbnail symbol-choice" title="/X symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols057.png" data-symbol="/Y" class="img-thumbnail symbol-choice" title="/Y symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols058.png" data-symbol="/Z" class="img-thumbnail symbol-choice" title="/Z symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols059.png" data-symbol="/[" class="img-thumbnail symbol-choice" title="/[ symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols060.png" data-symbol="/\" class="img-thumbnail symbol-choice" title="/\ symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols061.png" data-symbol="/]" class="img-thumbnail symbol-choice" title="/] symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols062.png" data-symbol="/^" class="img-thumbnail symbol-choice" title="/^ symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols063.png" data-symbol="/_" class="img-thumbnail symbol-choice" title="/_ symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols064.png" data-symbol="/`" class="img-thumbnail symbol-choice" title="/` symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols065.png" data-symbol="/a" class="img-thumbnail symbol-choice" title="/a symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols066.png" data-symbol="/b" class="img-thumbnail symbol-choice" title="/b symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols067.png" data-symbol="/c" class="img-thumbnail symbol-choice" title="/c symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols068.png" data-symbol="/d" class="img-thumbnail symbol-choice" title="/d symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols069.png" data-symbol="/e" class="img-thumbnail symbol-choice" title="/e symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols070.png" data-symbol="/f" class="img-thumbnail symbol-choice" title="/f symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols071.png" data-symbol="/g" class="img-thumbnail symbol-choice" title="/g symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols072.png" data-symbol="/h" class="img-thumbnail symbol-choice" title="/h symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols073.png" data-symbol="/i" class="img-thumbnail symbol-choice" title="/i symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols074.png" data-symbol="/j" class="img-thumbnail symbol-choice" title="/j symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols075.png" data-symbol="/k" class="img-thumbnail symbol-choice" title="/k symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols076.png" data-symbol="/l" class="img-thumbnail symbol-choice" title="/l symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols077.png" data-symbol="/m" class="img-thumbnail symbol-choice" title="/m symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols078.png" data-symbol="/n" class="img-thumbnail symbol-choice" title="/n symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols079.png" data-symbol="/o" class="img-thumbnail symbol-choice" title="/o symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols080.png" data-symbol="/p" class="img-thumbnail symbol-choice" title="/p symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols081.png" data-symbol="/q" class="img-thumbnail symbol-choice" title="/q symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols082.png" data-symbol="/r" class="img-thumbnail symbol-choice" title="/r symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols083.png" data-symbol="/s" class="img-thumbnail symbol-choice" title="/s symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols084.png" data-symbol="/t" class="img-thumbnail symbol-choice" title="/t symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols085.png" data-symbol="/u" class="img-thumbnail symbol-choice" title="/u symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols086.png" data-symbol="/v" class="img-thumbnail symbol-choice" title="/v symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols087.png" data-symbol="/w" class="img-thumbnail symbol-choice" title="/w symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols088.png" data-symbol="/x" class="img-thumbnail symbol-choice" title="/x symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols089.png" data-symbol="/y" class="img-thumbnail symbol-choice" title="/y symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols090.png" data-symbol="/z" class="img-thumbnail symbol-choice" title="/z symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols091.png" data-symbol="/{" class="img-thumbnail symbol-choice" title="/{ symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols092.png" data-symbol="/|" class="img-thumbnail symbol-choice" title="/| symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols093.png" data-symbol="/}" class="img-thumbnail symbol-choice" title="/} symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols094.png" data-symbol="/~" class="img-thumbnail symbol-choice" title="/~ symbol">
+        </div>
+        <div class="col">
+          <img src="/static/symbols/symbols095.png" data-symbol="/" class="img-thumbnail symbol-choice" title="/ symbol">
+        </div>
+      <!-- Zweite Gruppe mit \ -->
+      <div class="col">
+      <img src="/static/symbols/symbols2001.png" data-symbol="\!" class="img-thumbnail symbol-choice" title="\! symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2002.png" data-symbol="\&quot;" class="img-thumbnail symbol-choice" title="\&quot; symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2003.png" data-symbol="\#" class="img-thumbnail symbol-choice" title="\# symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2004.png" data-symbol="\$" class="img-thumbnail symbol-choice" title="\$ symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2005.png" data-symbol="\%" class="img-thumbnail symbol-choice" title="\% symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2006.png" data-symbol="\&amp;" class="img-thumbnail symbol-choice" title="\&amp; symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2007.png" data-symbol="\&#x27;" class="img-thumbnail symbol-choice" title="\&#x27; symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2008.png" data-symbol="\(" class="img-thumbnail symbol-choice" title="\( symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2009.png" data-symbol="\)" class="img-thumbnail symbol-choice" title="\) symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2010.png" data-symbol="\*" class="img-thumbnail symbol-choice" title="\* symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2011.png" data-symbol="\+" class="img-thumbnail symbol-choice" title="\+ symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2012.png" data-symbol="\," class="img-thumbnail symbol-choice" title="\, symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2013.png" data-symbol="\-" class="img-thumbnail symbol-choice" title="\- symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2014.png" data-symbol="\." class="img-thumbnail symbol-choice" title="\. symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2015.png" data-symbol="\/" class="img-thumbnail symbol-choice" title="\/ symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2016.png" data-symbol="\0" class="img-thumbnail symbol-choice" title="\0 symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2017.png" data-symbol="\1" class="img-thumbnail symbol-choice" title="\1 symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2018.png" data-symbol="\2" class="img-thumbnail symbol-choice" title="\2 symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2019.png" data-symbol="\3" class="img-thumbnail symbol-choice" title="\3 symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2020.png" data-symbol="\4" class="img-thumbnail symbol-choice" title="\4 symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2021.png" data-symbol="\5" class="img-thumbnail symbol-choice" title="\5 symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2022.png" data-symbol="\6" class="img-thumbnail symbol-choice" title="\6 symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2023.png" data-symbol="\7" class="img-thumbnail symbol-choice" title="\7 symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2024.png" data-symbol="\8" class="img-thumbnail symbol-choice" title="\8 symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2025.png" data-symbol="\9" class="img-thumbnail symbol-choice" title="\9 symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2026.png" data-symbol="\:" class="img-thumbnail symbol-choice" title="\: symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2027.png" data-symbol="\;" class="img-thumbnail symbol-choice" title="\; symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2028.png" data-symbol="\&lt;" class="img-thumbnail symbol-choice" title="\&lt; symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2029.png" data-symbol="\=" class="img-thumbnail symbol-choice" title="\= symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2030.png" data-symbol="\&gt;" class="img-thumbnail symbol-choice" title="\&gt; symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2031.png" data-symbol="\?" class="img-thumbnail symbol-choice" title="\? symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2032.png" data-symbol="\@" class="img-thumbnail symbol-choice" title="\@ symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2033.png" data-symbol="\A" class="img-thumbnail symbol-choice" title="\A symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2034.png" data-symbol="\B" class="img-thumbnail symbol-choice" title="\B symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2035.png" data-symbol="\C" class="img-thumbnail symbol-choice" title="\C symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2036.png" data-symbol="\D" class="img-thumbnail symbol-choice" title="\D symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2037.png" data-symbol="\E" class="img-thumbnail symbol-choice" title="\E symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2038.png" data-symbol="\F" class="img-thumbnail symbol-choice" title="\F symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2039.png" data-symbol="\G" class="img-thumbnail symbol-choice" title="\G symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2040.png" data-symbol="\H" class="img-thumbnail symbol-choice" title="\H symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2041.png" data-symbol="\I" class="img-thumbnail symbol-choice" title="\I symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2042.png" data-symbol="\J" class="img-thumbnail symbol-choice" title="\J symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2043.png" data-symbol="\K" class="img-thumbnail symbol-choice" title="\K symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2044.png" data-symbol="\L" class="img-thumbnail symbol-choice" title="\L symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2045.png" data-symbol="\M" class="img-thumbnail symbol-choice" title="\M symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2046.png" data-symbol="\N" class="img-thumbnail symbol-choice" title="\N symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2047.png" data-symbol="\O" class="img-thumbnail symbol-choice" title="\O symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2048.png" data-symbol="\P" class="img-thumbnail symbol-choice" title="\P symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2049.png" data-symbol="\Q" class="img-thumbnail symbol-choice" title="\Q symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2050.png" data-symbol="\R" class="img-thumbnail symbol-choice" title="\R symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2051.png" data-symbol="\S" class="img-thumbnail symbol-choice" title="\S symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2052.png" data-symbol="\T" class="img-thumbnail symbol-choice" title="\T symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2053.png" data-symbol="\U" class="img-thumbnail symbol-choice" title="\U symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2054.png" data-symbol="\V" class="img-thumbnail symbol-choice" title="\V symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2055.png" data-symbol="\W" class="img-thumbnail symbol-choice" title="\W symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2056.png" data-symbol="\X" class="img-thumbnail symbol-choice" title="\X symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2057.png" data-symbol="\Y" class="img-thumbnail symbol-choice" title="\Y symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2058.png" data-symbol="\Z" class="img-thumbnail symbol-choice" title="\Z symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2059.png" data-symbol="\[" class="img-thumbnail symbol-choice" title="\[ symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2060.png" data-symbol="\\" class="img-thumbnail symbol-choice" title="\\ symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2061.png" data-symbol="\]" class="img-thumbnail symbol-choice" title="\] symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2062.png" data-symbol="\^" class="img-thumbnail symbol-choice" title="\^ symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2063.png" data-symbol="\_" class="img-thumbnail symbol-choice" title="\_ symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2064.png" data-symbol="\`" class="img-thumbnail symbol-choice" title="\` symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2065.png" data-symbol="\a" class="img-thumbnail symbol-choice" title="\a symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2066.png" data-symbol="\b" class="img-thumbnail symbol-choice" title="\b symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2067.png" data-symbol="\c" class="img-thumbnail symbol-choice" title="\c symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2068.png" data-symbol="\d" class="img-thumbnail symbol-choice" title="\d symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2069.png" data-symbol="\e" class="img-thumbnail symbol-choice" title="\e symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2070.png" data-symbol="\f" class="img-thumbnail symbol-choice" title="\f symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2071.png" data-symbol="\g" class="img-thumbnail symbol-choice" title="\g symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2072.png" data-symbol="\h" class="img-thumbnail symbol-choice" title="\h symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2073.png" data-symbol="\i" class="img-thumbnail symbol-choice" title="\i symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2074.png" data-symbol="\j" class="img-thumbnail symbol-choice" title="\j symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2075.png" data-symbol="\k" class="img-thumbnail symbol-choice" title="\k symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2076.png" data-symbol="\l" class="img-thumbnail symbol-choice" title="\l symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2077.png" data-symbol="\m" class="img-thumbnail symbol-choice" title="\m symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2078.png" data-symbol="\n" class="img-thumbnail symbol-choice" title="\n symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2079.png" data-symbol="\o" class="img-thumbnail symbol-choice" title="\o symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2080.png" data-symbol="\p" class="img-thumbnail symbol-choice" title="\p symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2081.png" data-symbol="\q" class="img-thumbnail symbol-choice" title="\q symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2082.png" data-symbol="\r" class="img-thumbnail symbol-choice" title="\r symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2083.png" data-symbol="\s" class="img-thumbnail symbol-choice" title="\s symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2084.png" data-symbol="\t" class="img-thumbnail symbol-choice" title="\t symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2085.png" data-symbol="\u" class="img-thumbnail symbol-choice" title="\u symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2086.png" data-symbol="\v" class="img-thumbnail symbol-choice" title="\v symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2087.png" data-symbol="\w" class="img-thumbnail symbol-choice" title="\w symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2088.png" data-symbol="\x" class="img-thumbnail symbol-choice" title="\x symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2089.png" data-symbol="\y" class="img-thumbnail symbol-choice" title="\y symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2090.png" data-symbol="\z" class="img-thumbnail symbol-choice" title="\z symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2091.png" data-symbol="\{" class="img-thumbnail symbol-choice" title="\{ symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2092.png" data-symbol="\|" class="img-thumbnail symbol-choice" title="\| symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2093.png" data-symbol="\}" class="img-thumbnail symbol-choice" title="\} symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2094.png" data-symbol="\~" class="img-thumbnail symbol-choice" title="\~ symbol">
+    </div>
+    <div class="col">
+      <img src="/static/symbols/symbols2095.png" data-symbol="\" class="img-thumbnail symbol-choice" title="\ symbol">
+    </div>
+    </div>
+    <div class="form-text">Klicke ein Symbol, um es auszuwählen</div>
   </div>
+
   <div class="mb-3">
-    <label class="form-label">Type</label>
-    <select name="type" class="form-select">
-      <option value="beacon">Beacon</option>
-      <option value="object">Object</option>
+    <label for="type" class="form-label">Typ</label>
+    <select class="form-select" id="type" name="type">
+      <option value="beacon">Position-Bake</option>
+      <option value="object">APRS-Objekt</option>
     </select>
   </div>
+
   <div class="form-check mb-3">
-    <input type="checkbox" name="active" class="form-check-input" id="active" checked>
-    <label for="active" class="form-check-label">Active</label>
+    <input class="form-check-input" type="checkbox" id="active" name="active" checked>
+    <label class="form-check-label" for="active">Aktiv</label>
   </div>
-  <button type="submit" class="btn btn-success">Add</button>
-  <a href="{{ url_for('index') }}" class="btn btn-secondary">Back</a>
+
+  <button type="submit" class="btn btn-success">Hinzufügen</button>
+  <a href="/" class="btn btn-secondary">Zurück</a>
 </form>
+
+<script>
+  document.querySelectorAll('.symbol-choice').forEach(el => {
+    el.addEventListener('click', () => {
+      document.getElementById('symbol').value = el.dataset.symbol;
+      document.querySelectorAll('.symbol-choice').forEach(img => img.classList.remove('border-primary'));
+      el.classList.add('border-primary');
+    });
+  });
+</script>
 {% endblock %}

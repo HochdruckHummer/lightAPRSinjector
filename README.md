@@ -87,11 +87,12 @@ Edit config: Set your callsign, passcode, server and port
 
 Add beacon or object:
 
-<img width="688" height="631" alt="beacon or object configurator" src="https://github.com/user-attachments/assets/b6d30bc5-eb71-4f71-8295-fc23fa8eabf1" />
+<img width="691" height="786" alt="Screenshot_new_APRS_beacon_or_object" src="https://github.com/user-attachments/assets/21b5d3ce-31ef-40ef-b545-b5bb2ff26d9a" />
+
 
 Name: max 9 characters (for APRS objects)
 
-Position: latitude and longitude separated by comma (e.g., 52.2450,8.9057)
+Position: latitude and longitude separated by comma (e.g., 52.2450,8.9057) or selected on map.
 
 Symbol: select from 190 possible APRS symbols
 

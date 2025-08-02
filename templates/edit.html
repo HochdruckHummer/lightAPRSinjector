@@ -40,10 +40,11 @@
   </div>
   <div class="mb-3">
     <label class="form-label">Position (Lat,Lon)</label>
-    <input name="position" value="{{ beacon.position }}" class="form-control">
+    <input name="position" id="position" value="{{ beacon.position }}" class="form-control">
   </div>
+    <div id="map" style="height: 300px;" class="mb-3 rounded border"></div>
   <div class="mb-3">
-  <label class="form-label">Symbol auswählen</label><br>
+  <label class="form-label">Choose symbol</label><br>
   <input type="hidden" name="symbol" id="symbol" value="{{ beacon.symbol }}">
   <div id="symbol-grid">
     <div class="col">
@@ -618,7 +619,7 @@
 <img src="/static/symbols/symbols2095.png" data-symbol="\" class="img-thumbnail symbol-choice" title="\ symbol">
 </div>
   </div>
-  <div class="form-text">Klicke ein Symbol, um es auszuwählen</div>
+  <div class="form-text">Click to choose a symbol</div>
 </div>
   <div class="mb-3">
     <label class="form-label">Type</label>
@@ -647,6 +648,39 @@
     if (el.dataset.symbol === document.getElementById('symbol').value) {
       el.classList.add('border-primary');
     }
+  });
+</script>
+<script>
+  const map = L.map('map').setView([51.0, 10.0], 6); // Start-Zentrum auf Deutschland
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  const positionInput = document.getElementById('position');
+  let marker;
+
+  // Position aus dem Feld lesen und Marker setzen
+  if (positionInput.value) {
+    const [lat, lon] = positionInput.value.split(',').map(s => parseFloat(s.trim()));
+    if (!isNaN(lat) && !isNaN(lon)) {
+      marker = L.marker([lat, lon], {draggable: true}).addTo(map);
+      map.setView([lat, lon], 13);
+      marker.on('dragend', () => {
+        const pos = marker.getLatLng();
+        positionInput.value = `${pos.lat.toFixed(6)},${pos.lng.toFixed(6)}`;
+      });
+    }
+  }
+
+  // Klick auf Karte => neuen Marker setzen
+  map.on('click', function(e) {
+    const { lat, lng } = e.latlng;
+    if (marker) {
+      marker.setLatLng(e.latlng);
+    } else {
+      marker = L.marker(e.latlng, {draggable: true}).addTo(map);
+    }
+    positionInput.value = `${lat.toFixed(6)},${lng.toFixed(6)}`;
   });
 </script>
 {% endblock %}

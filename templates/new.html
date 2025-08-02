@@ -3,7 +3,7 @@
 
 {% block content %}
 
-<<style>
+<style>
   #symbol-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
@@ -25,7 +25,7 @@
   }
 </style>
 
-<h1>Neue APRS-Bake oder Objekt anlegen</h1>
+<h1>Create new APRS beacon or object</h1>
 
 <form method="post">
   <div class="mb-3">
@@ -40,11 +40,13 @@
 
   <div class="mb-3">
     <label for="position" class="form-label">Position (Lat,Lon)</label>
-    <input type="text" class="form-control" id="position" name="position">
+    <input type="text" class="form-control" id="position" name="position" placeholder="52.850181,5.685371">
   </div>
 
+  <div id="map" style="height: 300px;" class="mb-3 rounded border"></div>
+
   <div class="mb-3">
-    <label class="form-label">Symbol auswählen</label><br>
+    <label class="form-label">Choose symbol</label><br>
     <input type="hidden" name="symbol" id="symbol">
     <div id="symbol-grid">
           <div class="col">
@@ -619,24 +621,24 @@
       <img src="/static/symbols/symbols2095.png" data-symbol="\" class="img-thumbnail symbol-choice" title="\ symbol">
     </div>
     </div>
-    <div class="form-text">Klicke ein Symbol, um es auszuwählen</div>
+    <div class="form-text">Click to choose a symbol</div>
   </div>
 
   <div class="mb-3">
     <label for="type" class="form-label">Typ</label>
     <select class="form-select" id="type" name="type">
-      <option value="beacon">Position-Bake</option>
-      <option value="object">APRS-Objekt</option>
+      <option value="beacon">Beacon</option>
+      <option value="object">Object</option>
     </select>
   </div>
 
   <div class="form-check mb-3">
     <input class="form-check-input" type="checkbox" id="active" name="active" checked>
-    <label class="form-check-label" for="active">Aktiv</label>
+    <label class="form-check-label" for="active">Active</label>
   </div>
 
-  <button type="submit" class="btn btn-success">Hinzufügen</button>
-  <a href="/" class="btn btn-secondary">Zurück</a>
+  <button type="submit" class="btn btn-success">Add</button>
+  <a href="/" class="btn btn-secondary">Back</a>
 </form>
 
 <script>
@@ -648,4 +650,39 @@
     });
   });
 </script>
+
+<script>
+  const map = L.map('map').setView([52.850181, 5.685371], 6); // Anfangsansicht (z. B. Mitte Deutschland)
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  const marker = L.marker([52.850181, 5.685371], { draggable: true }).addTo(map);
+
+  // Wenn man auf die Karte klickt
+  map.on('click', function (e) {
+    const lat = e.latlng.lat.toFixed(6);
+    const lng = e.latlng.lng.toFixed(6);
+    marker.setLatLng([lat, lng]);
+    document.getElementById('position').value = `${lat},${lng}`;
+  });
+
+  // Wenn man die Koordinaten manuell eingibt
+  document.getElementById('position').addEventListener('change', function () {
+    const [lat, lng] = this.value.split(',').map(Number);
+    if (!isNaN(lat) && !isNaN(lng)) {
+      const newLatLng = L.latLng(lat, lng);
+      marker.setLatLng(newLatLng);
+      map.setView(newLatLng, 12);
+    }
+  });
+
+  // Marker-Drag: Koordinatenfeld aktualisieren
+  marker.on('dragend', function () {
+    const pos = marker.getLatLng();
+    document.getElementById('position').value = `${pos.lat.toFixed(6)},${pos.lng.toFixed(6)}`;
+  });
+</script>
+
 {% endblock %}

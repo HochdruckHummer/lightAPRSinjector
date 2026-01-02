@@ -118,6 +118,7 @@ SEND_INTERVAL = 300  # seconds
 
 Did this application help you?
 If you like, you can send me a beer via PayPal:
+
 <a href="https://paypal.me/DanielBeckemeier" target="_blank" rel="nofollow sponsored noopener">
   <img
     width="300"

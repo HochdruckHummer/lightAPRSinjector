@@ -120,8 +120,8 @@ Did this application help you?
 If you like, you can send me a beer via PayPal:
 <a href="https://paypal.me/DanielBeckemeier" target="_blank" rel="nofollow sponsored noopener">
   <img
-    width="500"
-    height="83"
+    width="300"
+    height="50"
     alt="Donate a beer"
     src="https://github.com/user-attachments/assets/7c223db3-f267-447e-9207-4fe1cc72f829"
   />

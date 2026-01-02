@@ -114,6 +114,20 @@ Change interval in app.py:
 
 SEND_INTERVAL = 300  # seconds
 
+##  Support the development
+
+Did this application help you?
+If you like, you can send me a beer via PayPal:
+<a href="https://paypal.me/DanielBeckemeier" target="_blank" rel="nofollow sponsored noopener">
+  <img
+    width="500"
+    height="83"
+    alt="Donate a beer"
+    src="https://github.com/user-attachments/assets/7c223db3-f267-447e-9207-4fe1cc72f829"
+  />
+</a>
+
+
 ## 🛠️ Notes
 
 APRS object names are limited to 9 characters

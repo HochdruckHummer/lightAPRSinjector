@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Neue APRS-Bake oder Objekt{% endblock %}
+{% block title %}New APRS beacon or object{% endblock %}
 
 {% block content %}
 
@@ -652,7 +652,7 @@
 </script>
 
 <script>
-  const map = L.map('map').setView([52.850181, 5.685371], 6); // Anfangsansicht (z. B. Mitte Deutschland)
+  const map = L.map('map').setView([52.850181, 5.685371], 6); // Center view
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors'
@@ -660,7 +660,7 @@
 
   const marker = L.marker([52.850181, 5.685371], { draggable: true }).addTo(map);
 
-  // Wenn man auf die Karte klickt
+  // When clicking on the map
   map.on('click', function (e) {
     const lat = e.latlng.lat.toFixed(6);
     const lng = e.latlng.lng.toFixed(6);
@@ -668,7 +668,7 @@
     document.getElementById('position').value = `${lat},${lng}`;
   });
 
-  // Wenn man die Koordinaten manuell eingibt
+  // When entering coordinates manually
   document.getElementById('position').addEventListener('change', function () {
     const [lat, lng] = this.value.split(',').map(Number);
     if (!isNaN(lat) && !isNaN(lng)) {
@@ -678,7 +678,7 @@
     }
   });
 
-  // Marker-Drag: Koordinatenfeld aktualisieren
+  // Marker-Drag: Update coordinates
   marker.on('dragend', function () {
     const pos = marker.getLatLng();
     document.getElementById('position').value = `${pos.lat.toFixed(6)},${pos.lng.toFixed(6)}`;

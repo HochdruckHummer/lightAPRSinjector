@@ -10,9 +10,9 @@ from datetime import datetime
 app = Flask(__name__)
 CONFIG_FILE = "config.json"
 BEACONS_FILE = "beacons.json"
-SEND_INTERVAL = 300  # alle 5 Minuten senden
+SEND_INTERVAL = 300  # send all 5 minutes
 
-# ==================== Hilfsfunktionen ====================
+# ==================== Helper functions ====================
 
 def load_config():
     if not os.path.exists(CONFIG_FILE):

@@ -56,7 +56,7 @@ def new_beacon():
         return redirect(url_for("index"))
     return render_template("new.html")
 
-# ==================== APRS-Versand ====================
+# ==================== APRS-Sending ====================
 
 def send_position_beacon(beacon, config):
     try:
@@ -82,7 +82,7 @@ def send_position_beacon(beacon, config):
         conn.close()
         print(f"Gesendet: {beacon['text']}")
     except Exception as e:
-        print(f"Fehler beim Senden der Bake: {e}")
+        print(f"Error when sending the beacon: {e}")
 
 def send_object(beacon, config):
     try:
@@ -121,9 +121,9 @@ def send_object(beacon, config):
 
 def send_beacon(beacon, config):
     if beacon.get("type", "beacon") == "object":
-        send_object(beacon, config)  # Wenn Typ "object", dann APRS-Objekt senden
+        send_object(beacon, config)  # If type "object", send APRS-Object
     else:
-        send_position_beacon(beacon, config)  # Sonst normale Bake senden
+        send_position_beacon(beacon, config)  # If not, send normal beacon instead
 
 def format_position(lat, lon, symbol_table='/'):
     ns = 'N' if lat >= 0 else 'S'
@@ -147,7 +147,7 @@ def auto_sender():
 
 threading.Thread(target=auto_sender, daemon=True).start()
 
-# ==================== Web-Oberfläche ====================
+# ==================== Web-Gui ====================
 
 HTML = """
 <!doctype html>
@@ -156,7 +156,7 @@ HTML = """
 
 <h2>Configuration</h2>
 <form method="post" action="/config">
-  Rufzeichen: <input name="callsign" value="{{ config.callsign }}"><br>
+  Callsign: <input name="callsign" value="{{ config.callsign }}"><br>
   Passcode: <input name="passcode" value="{{ config.passcode }}"><br>
   Server: <input name="server" value="{{ config.server }}"><br>
   Port: <input name="port" value="{{ config.port }}"><br>
@@ -240,7 +240,7 @@ def config_page():
         save_config(cfg)
         return redirect(url_for("index"))
 
-    # GET-Methode: Seite anzeigen
+    # GET-Method: Show page
     config = load_config()
     return render_template("config.html", config=config)
 
@@ -254,7 +254,7 @@ def add_beacon():
     "text": request.form["text"],
     "position": request.form["position"],
     "symbol": request.form["symbol"],
-    "type": request.form.get("type", "beacon"),  # neu
+    "type": request.form.get("type", "beacon"),  # new
     "active": "active" in request.form
 }
     beacons.append(new_beacon)
@@ -278,7 +278,7 @@ def send_once(idx):
     return redirect(url_for("index"))
 
 
-# Neue Route für Bearbeiten (GET und POST)
+# New Route for editing (GET and POST)
 @app.route("/edit/<int:idx>", methods=["GET", "POST"])
 def edit_beacon(idx):
     beacons = load_beacons()
@@ -301,7 +301,7 @@ def edit_beacon(idx):
 
 
 
-# Neue Route zum Delete
+# New Route to Delete
 @app.route("/delete/<int:idx>", methods=["POST"])
 def delete_beacon(idx):
     beacons = load_beacons()

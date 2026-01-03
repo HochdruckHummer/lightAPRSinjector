@@ -644,14 +644,14 @@
       el.classList.add('border-primary');
     });
 
-    // Optional: Vorbelegung aktivieren (bei bearbeitetem Beacon)
+    // Optional: Activate pre-selection (on edited beacon)
     if (el.dataset.symbol === document.getElementById('symbol').value) {
       el.classList.add('border-primary');
     }
   });
 </script>
 <script>
-  const map = L.map('map').setView([51.0, 10.0], 6); // Start-Zentrum auf Deutschland
+  const map = L.map('map').setView([51.0, 10.0], 6); // Start center on Germany
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors'
   }).addTo(map);
@@ -659,7 +659,7 @@
   const positionInput = document.getElementById('position');
   let marker;
 
-  // Position aus dem Feld lesen und Marker setzen
+  // Set position from field on map marker
   if (positionInput.value) {
     const [lat, lon] = positionInput.value.split(',').map(s => parseFloat(s.trim()));
     if (!isNaN(lat) && !isNaN(lon)) {
@@ -672,7 +672,7 @@
     }
   }
 
-  // Klick auf Karte => neuen Marker setzen
+  // Click on map -> set new marker
   map.on('click', function(e) {
     const { lat, lng } = e.latlng;
     if (marker) {

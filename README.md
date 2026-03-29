@@ -51,20 +51,29 @@ docker compose up -d --build
 
 ### Option 2: Portainer (Docker with GUI)
 
-If you manage your containers via Portainer (e.g. on a Raspberry Pi or home server):
+If you manage your containers via Portainer (e.g. on a Raspberry Pi or home server), there are two ways — no manual cloning required.
 
-**1. Clone the repository onto your server**
-```bash
-git clone https://github.com/HochdruckHummer/lightAPRSinjector.git
-cd lightAPRSinjector
-```
+#### 2a – Via Git repository (recommended)
 
-**2. In Portainer → Stacks → Add Stack**
+Portainer can pull and build directly from GitHub, no terminal needed.
 
-- Choose **"Upload"** and upload the `docker-compose.yml` from the repository, or
-- Choose **"Web editor"** and paste the contents of `docker-compose.yml`
+1. In Portainer: **Stacks → Add Stack → Repository**
+2. Set the repository URL to:
+   ```
+   https://github.com/HochdruckHummer/lightAPRSinjector.git
+   ```
+3. Leave the branch as `main` and the compose path as `docker-compose.yml`
+4. Click **Deploy the stack**
 
-**3. Click "Deploy the stack"**
+To update later: open the stack in Portainer and click **Pull and redeploy**.
+
+#### 2b – Via Web Editor (copy & paste)
+
+1. In Portainer: **Stacks → Add Stack → Web editor**
+2. Paste the contents of the [`docker-compose.yml`](docker-compose.yml) from this repository
+3. Click **Deploy the stack**
+
+> **Note:** With the Web Editor, Portainer cannot build the image on its own — this only works once a pre-built image is available on Docker Hub. For a fully click-and-go setup without a terminal, use **Option 2a** instead.
 
 The app will be available at `http://<your-server-ip>:5000`.
 

@@ -22,15 +22,14 @@ There are three ways to run lightAPRSinjector. Choose whichever fits best.
 
 ### Option 1: Docker (recommended)
 
-The easiest way to get started. No Python setup required.
+The easiest way to get started. No Python setup or cloning required — the image is pulled directly from the GitHub Container Registry.
 
-**1. Clone the repository**
+**1. Download the compose file**
 ```bash
-git clone https://github.com/HochdruckHummer/lightAPRSinjector.git
-cd lightAPRSinjector
+curl -O https://raw.githubusercontent.com/HochdruckHummer/lightAPRSinjector/main/docker-compose.yml
 ```
 
-**2. Build and start the container**
+**2. Start the container**
 ```bash
 docker compose up -d
 ```
@@ -43,8 +42,8 @@ Config and beacon data are stored in a persistent Docker volume (`aprs_data`), s
 
 **To update to the latest version:**
 ```bash
-git pull
-docker compose up -d --build
+docker compose pull
+docker compose up -d
 ```
 
 ---
@@ -73,7 +72,7 @@ To update later: open the stack in Portainer and click **Pull and redeploy**.
 2. Paste the contents of the [`docker-compose.yml`](docker-compose.yml) from this repository
 3. Click **Deploy the stack**
 
-> **Note:** With the Web Editor, Portainer cannot build the image on its own — this only works once a pre-built image is available on Docker Hub. For a fully click-and-go setup without a terminal, use **Option 2a** instead.
+> **Note:** The image is pulled from `ghcr.io/hochdruckhummer/lightaprsinjektor:latest` — no build step needed. Both options work without cloning the repository.
 
 The app will be available at `http://<your-server-ip>:5000`.
 

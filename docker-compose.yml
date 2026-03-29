@@ -1,0 +1,13 @@
+services:
+  lightaprsinjektor:
+    image: lightaprsinjektor
+    build: .
+    container_name: lightaprsinjektor
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    volumes:
+      - aprs_data:/data
+
+volumes:
+  aprs_data:

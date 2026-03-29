@@ -1,15 +1,15 @@
 import json
 import time
 import threading
-from flask import Flask, request, redirect, url_for, render_template, render_template_string
+from flask import Flask, request, redirect, url_for, render_template
 
 import aprslib
 import os
 from datetime import datetime
 
 app = Flask(__name__)
-CONFIG_FILE = "config.json"
-BEACONS_FILE = "beacons.json"
+CONFIG_FILE = os.environ.get("CONFIG_FILE", "config.json")
+BEACONS_FILE = os.environ.get("BEACONS_FILE", "beacons.json")
 SEND_INTERVAL = 300  # send all 5 minutes
 
 # ==================== Helper functions ====================
@@ -58,25 +58,35 @@ def new_beacon():
 
 # ==================== APRS-Sending ====================
 
+def parse_symbol(beacon):
+    """Parse symbol table and symbol character from beacon config."""
+    symbol_input = beacon.get("symbol", "/>")
+    if len(symbol_input) == 2:
+        return symbol_input[0], symbol_input[1]
+    return '/', '>'
+
+def get_aprs_connection(config):
+    """Create and return a connected APRS-IS connection."""
+    conn = aprslib.IS(
+        config["callsign"],
+        passwd=config["passcode"],
+        host=config["server"],
+        port=int(config["port"])  # FIX #3: always cast port to int
+    )
+    conn.connect()
+    return conn
+
 def send_position_beacon(beacon, config):
+    # FIX #2: validate position before sending
     try:
-        conn = aprslib.IS(
-            config["callsign"],
-            passwd=config["passcode"],
-            host=config["server"],
-            port=config["port"]
-        )
-        conn.connect()
         lat, lon = map(float, beacon["position"].split(","))
+    except (ValueError, AttributeError):
+        print(f"Ungültige Position für Beacon '{beacon.get('name', '?')}': {beacon.get('position')}")
+        return
 
-        symbol_input = beacon.get("symbol", "/>")  # Default: "/>"
-        if len(symbol_input) == 2:
-            symbol_table = symbol_input[0]
-            symbol = symbol_input[1]
-        else:
-            symbol_table = '/'
-            symbol = '>'
-
+    try:
+        conn = get_aprs_connection(config)
+        symbol_table, symbol = parse_symbol(beacon)
         pos = format_position(lat, lon, symbol_table)
         conn.sendall(f"{config['callsign']}>APRS,TCPIP*:={pos}{symbol}{beacon.get('text','')}")
         conn.close()
@@ -85,33 +95,21 @@ def send_position_beacon(beacon, config):
         print(f"Error when sending the beacon: {e}")
 
 def send_object(beacon, config):
+    # FIX #2: validate position before sending
     try:
-        conn = aprslib.IS(
-            config["callsign"],
-            passwd=config["passcode"],
-            host=config["server"],
-            port=config["port"]
-        )
-        conn.connect()
-
         lat, lon = map(float, beacon["position"].split(","))
+    except (ValueError, AttributeError):
+        print(f"Ungültige Position für Objekt '{beacon.get('name', '?')}': {beacon.get('position')}")
+        return
 
-        symbol_input = beacon.get("symbol", "/>")  # Default: "/>"
-        if len(symbol_input) == 2:
-            symbol_table = symbol_input[0]
-            symbol = symbol_input[1]
-        else:
-            symbol_table = '/'
-            symbol = '>'
-
+    try:
+        conn = get_aprs_connection(config)
+        symbol_table, symbol = parse_symbol(beacon)
         pos = format_position(lat, lon, symbol_table)
-
         timestamp = datetime.utcnow().strftime("%d%H%Mz")
         objname = beacon['name'][:9].ljust(9)
         text = beacon.get('text', '')
-
         packet = f";{objname}*{timestamp}{pos}{symbol}{text}"
-
         conn.sendall(f"{config['callsign']}>APRS,TCPIP*:{packet}")
         conn.close()
         print(f"Objekt gesendet: {objname.strip()} ({pos})")
@@ -121,9 +119,9 @@ def send_object(beacon, config):
 
 def send_beacon(beacon, config):
     if beacon.get("type", "beacon") == "object":
-        send_object(beacon, config)  # If type "object", send APRS-Object
+        send_object(beacon, config)
     else:
-        send_position_beacon(beacon, config)  # If not, send normal beacon instead
+        send_position_beacon(beacon, config)
 
 def format_position(lat, lon, symbol_table='/'):
     ns = 'N' if lat >= 0 else 'S'
@@ -149,79 +147,6 @@ threading.Thread(target=auto_sender, daemon=True).start()
 
 # ==================== Web-Gui ====================
 
-HTML = """
-<!doctype html>
-<title>APRS Beacon and Object Manager by DL8YDP</title>
-<h1>APRS Beacon and Object Manager by DL8YDP</h1>
-
-<h2>Configuration</h2>
-<form method="post" action="/config">
-  Callsign: <input name="callsign" value="{{ config.callsign }}"><br>
-  Passcode: <input name="passcode" value="{{ config.passcode }}"><br>
-  Server: <input name="server" value="{{ config.server }}"><br>
-  Port: <input name="port" value="{{ config.port }}"><br>
-  <input type="submit" value="Save">
-</form>
-
-<h2>Add new APRS beacon or object</h2>
-<form method="post" action="/add">
-  Name: <input name="name"><br>
-  Text: <input name="text"><br>
-  Position (Lat,Lon): <input name="position"><br>
-  Symbol: <input name="symbol" value="/"><br>
-Typ:
-<select name="type">
-  <option value="beacon" selected>Position-Bake</option>
-  <option value="object">APRS-Objekt</option>
-</select><br>
-Aktiv: <input type="checkbox" name="active" checked><br>
-  <input type="submit" value="Add">
-</form>
-
-<h2>Active items</h2>
-<ul>
-{% for b in beacons %}
-  <li>
-    <b>{{ b.name }}</b>: {{ b.text }} ({{ b.position }}) [Symbol: {{ b.symbol }}]
-    <i>({{ "Object" if b.type == "object" else "Beacon" }})</i>
-    <form style="display:inline" method="post" action="/toggle/{{ loop.index0 }}">
-      <button type="submit">{{ "Deactivate" if b.active else "Activate" }}</button>
-    </form>
-    <form style="display:inline" method="post" action="/send/{{ loop.index0 }}">
-      <button type="submit">Send now</button>
-    </form>
-    <a href="{{ url_for('edit_beacon', idx=loop.index0) }}">Edit</a>
-    <form style="display:inline" method="post" action="/delete/{{ loop.index0 }}" onsubmit="return confirm('Do you really really want to delete this beacon?');">
-      <button type="submit">Delete</button>
-    </form>
-  </li>
-{% endfor %}
-</ul>
-"""
-
-EDIT_HTML = """
-<!doctype html>
-<title>Edit APRS item</title>
-<h1>Edit APRS item</h1>
-
-<form method="post" action="/edit/{{ index }}">
-  Name: <input name="name" value="{{ beacon.name }}"><br>
-  Text: <input name="text" value="{{ beacon.text }}"><br>
-  Position (Lat,Lon): <input name="position" value="{{ beacon.position }}"><br>
-  Symbol: <input name="symbol" value="{{ beacon.symbol }}"><br>
-  Typ:
-  <select name="type">
-    <option value="beacon" {% if beacon.type == 'beacon' %}selected{% endif %}>Position-Bake</option>
-    <option value="object" {% if beacon.type == 'object' %}selected{% endif %}>APRS-Objekt</option>
-  </select><br>
-  Aktiv: <input type="checkbox" name="active" {% if beacon.active %}checked{% endif %}><br>
-  <input type="submit" value="Save">
-</form>
-
-<a href="/">Back</a>
-"""
-
-
 @app.route("/")
 def index():
     config = load_config()
@@ -240,23 +165,20 @@ def config_page():
         save_config(cfg)
         return redirect(url_for("index"))
 
-    # GET-Method: Show page
     config = load_config()
     return render_template("config.html", config=config)
-
-
 
 @app.route("/add", methods=["POST"])
 def add_beacon():
     beacons = load_beacons()
     new_beacon = {
-    "name": request.form["name"],
-    "text": request.form["text"],
-    "position": request.form["position"],
-    "symbol": request.form["symbol"],
-    "type": request.form.get("type", "beacon"),  # new
-    "active": "active" in request.form
-}
+        "name": request.form["name"],
+        "text": request.form["text"],
+        "position": request.form["position"],
+        "symbol": request.form["symbol"],
+        "type": request.form.get("type", "beacon"),
+        "active": "active" in request.form
+    }
     beacons.append(new_beacon)
     save_beacons(beacons)
     return redirect(url_for("index"))
@@ -277,8 +199,6 @@ def send_once(idx):
         send_beacon(beacons[idx], config)
     return redirect(url_for("index"))
 
-
-# New Route for editing (GET and POST)
 @app.route("/edit/<int:idx>", methods=["GET", "POST"])
 def edit_beacon(idx):
     beacons = load_beacons()
@@ -299,9 +219,6 @@ def edit_beacon(idx):
 
     return render_template("edit.html", beacon=beacons[idx], index=idx)
 
-
-
-# New Route to Delete
 @app.route("/delete/<int:idx>", methods=["POST"])
 def delete_beacon(idx):
     beacons = load_beacons()

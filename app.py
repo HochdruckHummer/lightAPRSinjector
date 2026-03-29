@@ -8,6 +8,7 @@ import os
 from datetime import datetime
 
 app = Flask(__name__)
+APP_VERSION = os.environ.get("APP_VERSION", "dev")
 CONFIG_FILE = os.environ.get("CONFIG_FILE", "config.json")
 BEACONS_FILE = os.environ.get("BEACONS_FILE", "beacons.json")
 SEND_INTERVAL = 300  # send all 5 minutes
@@ -151,7 +152,7 @@ threading.Thread(target=auto_sender, daemon=True).start()
 def index():
     config = load_config()
     beacons = load_beacons()
-    return render_template("index.html", config=config, beacons=beacons)
+    return render_template("index.html", config=config, beacons=beacons, version=APP_VERSION)
 
 @app.route("/config", methods=["GET", "POST"])
 def config_page():

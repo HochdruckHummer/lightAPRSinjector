@@ -10,31 +10,99 @@ A lightweight Flask web application to manage and send APRS position beacons and
 - Symbol support using `/` and `\` tables (e.g., `/E` = Eyeball, `\E` = Smokestack)  
 - Web interface for configuration and beacon management  
 - Supports manual and scheduled transmissions (every 5 minutes)  
-- Built with Flask, `aprslib`  and Bootstrap.
+- Built with Flask, `aprslib` and Bootstrap.
 
-## 🚀 Installation and Setup
+---
 
+## 🚀 Installation
 
-### 1. Clone the repository
+There are three ways to run lightAPRSinjector. Choose whichever fits best.
+
+---
+
+### Option 1: Docker (recommended)
+
+The easiest way to get started. No Python setup required.
+
+**1. Clone the repository**
 ```bash
 git clone https://github.com/HochdruckHummer/lightAPRSinjector.git
-cd aprs-beacon-manager
+cd lightAPRSinjector
 ```
-### 2. (Optional but recommended) Create a virtual environment
+
+**2. Build and start the container**
+```bash
+docker compose up -d
+```
+
+**3. Open in browser**
+
+http://localhost:5000
+
+Config and beacon data are stored in a persistent Docker volume (`aprs_data`), so your settings survive container restarts and updates.
+
+**To update to the latest version:**
+```bash
+git pull
+docker compose up -d --build
+```
+
+---
+
+### Option 2: Portainer (Docker with GUI)
+
+If you manage your containers via Portainer (e.g. on a Raspberry Pi or home server):
+
+**1. Clone the repository onto your server**
+```bash
+git clone https://github.com/HochdruckHummer/lightAPRSinjector.git
+cd lightAPRSinjector
+```
+
+**2. In Portainer → Stacks → Add Stack**
+
+- Choose **"Upload"** and upload the `docker-compose.yml` from the repository, or
+- Choose **"Web editor"** and paste the contents of `docker-compose.yml`
+
+**3. Click "Deploy the stack"**
+
+The app will be available at `http://<your-server-ip>:5000`.
+
+---
+
+### Option 3: Manual (Python)
+
+**1. Clone the repository**
+```bash
+git clone https://github.com/HochdruckHummer/lightAPRSinjector.git
+cd lightAPRSinjector
+```
+
+**2. Create a virtual environment (recommended)**
 ```bash
 python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
-### 3. Install dependencies
-```bash
 
-pip install flask aprslib
+**3. Install dependencies**
+```bash
+pip install -r requirements.txt
 ```
 
+**4. Start the app**
+```bash
+python app.py
+```
 
-## 4 Configuration
-Create a file named config.json in the same directory as app.py:
+Open in browser: http://localhost:5000
 
+---
+
+## ⚙️ Configuration
+
+On first launch, open the web interface and set your callsign, APRS-IS passcode, server and port via the **Configuration** page.
+
+Alternatively, create a `config.json` manually in the same directory as `app.py`:
 
 ```json
 {
@@ -45,78 +113,58 @@ Create a file named config.json in the same directory as app.py:
 }
 ```
 
-callsign: Your full APRS callsign (e.g., DL8YDP or DL8YDP-9)
+| Field | Description |
+|---|---|
+| `callsign` | Your full APRS callsign (e.g. `DL8YDP` or `DL8YDP-9`) |
+| `passcode` | Your APRS-IS passcode – generate it [here](https://apps.magicbug.co.uk/passcode/) |
+| `server` | APRS-IS server, e.g. `euro.aprs2.net` |
+| `port` | Default: `14580` |
 
+If `beacons.json` does not exist, it will be created automatically when adding your first beacon.
 
-passcode: Your APRS-IS passcode (generate it [here](https://apps.magicbug.co.uk/passcode/))
+---
 
-
-server: Use euro.aprs2.net or another APRS-IS server
-
-
-port: Default is 14580
-
-
-If beacons.json does not exist, it will be created automatically when adding your first beacon.
-
-Example format for beacons.json:
-```json
-[
-  {
-    "name": "Home",
-    "text": "DL8YDP Home QTH",
-    "position": "52.2450,8.9057",
-    "symbol": "/-",
-    "type": "beacon",
-    "active": true
-  }
-]
-```
 ## 🖥️ Usage
 
-Start the app:
-```bash
-python app.py
-```
-
-Open the app in your browser:
-http://localhost:5000 (or access it via LAN if running on a Raspberry Pi or server)
-
 ### Web Interface Features
-Edit config: Set your callsign, passcode, server and port
-
-Add beacon or object:
 
 <img width="691" height="786" alt="Screenshot_new_APRS_beacon_or_object" src="https://github.com/user-attachments/assets/21b5d3ce-31ef-40ef-b545-b5bb2ff26d9a" />
 
+- **Edit config:** Set callsign, passcode, server and port
+- **Add beacon or object:**
+  - Name: max 9 characters (for APRS objects)
+  - Position: latitude and longitude separated by comma (e.g. `52.2450,8.9057`) or selected on map
+  - Symbol: select from 190 possible APRS symbols
+  - Text: description (max 43 characters recommended)
+  - Type: choose beacon or object
+- **Toggle Active:** Enable/disable specific entries
+- **Send Now:** Immediately transmit a beacon or object
+- **Edit/Delete:** Modify or remove existing entries
 
-Name: max 9 characters (for APRS objects)
-
-Position: latitude and longitude separated by comma (e.g., 52.2450,8.9057) or selected on map.
-
-Symbol: select from 190 possible APRS symbols
-
-Text: description (max 43 characters recommended)
-
-Type: choose beacon or object
-
-Toggle Active: Enable/disable specific entries
-
-Send Now: Immediately transmit a beacon or object
-
-Edit/Delete: Modify or remove existing entries
+---
 
 ## 🔁 Auto Transmission
 
 A background thread automatically transmits all active entries every 5 minutes.
 
-Change interval in app.py:
-
+To change the interval, edit `app.py`:
+```python
 SEND_INTERVAL = 300  # seconds
+```
 
-##  Support the development
+---
 
-Did this application help you?
+## 🛠️ Notes
+
+- APRS object names are limited to 9 characters
+- Symbol codes consist of two characters: `/` or `\` plus the actual symbol (e.g. `/E`)
+- The first character determines the symbol table; the second is the symbol itself
+
+---
+
+## Support the development
+
+Did this application help you?  
 If you like, you can send me a beer via PayPal:
 
 <a href="https://paypal.me/DanielBeckemeier" target="_blank" rel="nofollow sponsored noopener">
@@ -128,14 +176,7 @@ If you like, you can send me a beer via PayPal:
   />
 </a>
 
-
-## 🛠️ Notes
-
-APRS object names are limited to 9 characters
-
-Symbol codes consist of two characters: / or \ plus the actual symbol (e.g., /E)
-
-The first character determines the symbol table; the second is the symbol itself
+---
 
 ## 📜 License
 
@@ -143,5 +184,5 @@ This project is licensed under the MIT License.
 
 ## 📡 Author
 
-Created by DL8YDP
+Created by DL8YDP  
 Pull requests and contributions are welcome!

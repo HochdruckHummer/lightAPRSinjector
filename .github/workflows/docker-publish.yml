@@ -26,16 +26,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata (tags and labels)
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.repository_owner }}/lightaprsinjektor
-          tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-
       - name: Set version string
         id: version
         run: |
@@ -45,12 +35,22 @@ jobs:
             echo "value=dev-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
           fi
 
+      - name: Set image tags
+        id: tags
+        run: |
+          REPO="ghcr.io/${{ github.repository_owner }}/lightaprsinjektor"
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            TAG="${{ github.event.release.tag_name }}"
+            echo "value=${REPO}:${TAG},${REPO}:latest" >> $GITHUB_OUTPUT
+          else
+            echo "value=${REPO}:latest" >> $GITHUB_OUTPUT
+          fi
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.tags.outputs.value }}
           build-args: |
             APP_VERSION=${{ steps.version.outputs.value }}

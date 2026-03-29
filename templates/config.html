@@ -12,7 +12,17 @@
   </div>
   <div class="mb-3">
     <label for="passcode" class="form-label">Passcode</label>
-    <input type="text" name="passcode" id="passcode" class="form-control" value="{{ config.passcode }}">
+    <div class="input-group">
+      <input type="password" name="passcode" id="passcode" class="form-control" value="{{ config.passcode }}">
+      <button type="button" class="btn btn-outline-secondary" onclick="generatePasscode()">
+        Generate from Callsign
+      </button>
+    </div>
+    <div class="form-text">
+      Passcode is calculated locally from your callsign.
+      If the result seems wrong, you can also generate it manually
+      <a href="https://apps.magicbug.co.uk/passcode/" target="_blank" rel="noopener">here</a>.
+    </div>
   </div>
   <div class="mb-3">
     <label for="server" class="form-label">Server</label>
@@ -25,4 +35,33 @@
   <button type="submit" class="btn btn-primary">Save</button>
   <a href="{{ url_for('index') }}" class="btn btn-secondary">Back</a>
 </form>
+
+<script>
+function generatePasscode() {
+  const callsign = document.getElementById("callsign").value.trim().toUpperCase();
+  const base = callsign.split("-")[0]; // strip SSID
+
+  if (!base) {
+    alert("Please enter a callsign first.");
+    return;
+  }
+
+  // Standard APRS-IS passcode algorithm
+  let hash = 0x73e2;
+  for (let i = 0; i < base.length; i += 2) {
+    hash ^= base.charCodeAt(i) << 8;
+    if (i + 1 < base.length) {
+      hash ^= base.charCodeAt(i + 1);
+    }
+  }
+  const passcode = hash & 0x7fff;
+
+  document.getElementById("passcode").value = passcode;
+  // Briefly show the generated value, then hide again
+  document.getElementById("passcode").type = "text";
+  setTimeout(() => {
+    document.getElementById("passcode").type = "password";
+  }, 3000);
+}
+</script>
 {% endblock %}

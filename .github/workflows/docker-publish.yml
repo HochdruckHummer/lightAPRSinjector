@@ -38,7 +38,7 @@ jobs:
       - name: Set image tags
         id: tags
         run: |
-          REPO="ghcr.io/${{ github.repository_owner }}/lightaprsinjektor"
+          REPO="ghcr.io/$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')/lightaprsinjektor"
           if [[ "${{ github.event_name }}" == "release" ]]; then
             TAG="${{ github.event.release.tag_name }}"
             echo "value=${REPO}:${TAG},${REPO}:latest" >> $GITHUB_OUTPUT

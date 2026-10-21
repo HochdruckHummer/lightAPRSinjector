@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Login – lightAPRSinjector{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4">
+  <div class="col-12 col-sm-10 col-md-7 col-lg-5">
+    <div class="card shadow-sm">
+      <div class="card-header">🔒 Login</div>
+      <div class="card-body p-4">
+        <form method="post" action="{{ url_for('login') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="next" value="{{ next }}">
+
+          <div class="mb-3">
+            <label for="username" class="form-label">Username</label>
+            <input type="text" class="form-control" id="username" name="username" value="{{ username }}"
+                   autocomplete="username" autocapitalize="none" required {% if not username %}autofocus{% endif %}>
+          </div>
+
+          <div class="mb-3">
+            <label for="password" class="form-label">Password</label>
+            <input type="password" class="form-control" id="password" name="password"
+                   autocomplete="current-password" required {% if username %}autofocus{% endif %}>
+          </div>
+
+          <div class="form-check mb-4">
+            <input class="form-check-input" type="checkbox" id="remember" name="remember" checked>
+            <label class="form-check-label" for="remember">Stay logged in for 30 days</label>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100">Log in</button>
+        </form>
+      </div>
+    </div>
+    <p class="text-muted small mt-3 text-center">
+      The password is set with <code>WEB_PASSWORD</code>, or shown in the log on first start.
+    </p>
+  </div>
+</div>
+{% endblock %}

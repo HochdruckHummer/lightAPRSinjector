@@ -27,8 +27,17 @@
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h1 class="h3">{% block header %}lightAPRSinjector{% endblock %}</h1>
 
-    <div>
-      <a href="{{ url_for('config_page') }}" class="btn btn-outline-secondary btn-sm">⚙️ Configuration</a> <button id="themeToggle" class="btn btn-outline-secondary btn-sm">🌓 Darkmode</button>
+    <div class="d-flex gap-1">
+      {% if session.get('user') %}
+      <a href="{{ url_for('config_page') }}" class="btn btn-outline-secondary btn-sm">⚙️ Configuration</a>
+      {% endif %}
+      <button id="themeToggle" class="btn btn-outline-secondary btn-sm">🌓 Darkmode</button>
+      {% if session.get('user') %}
+      <form method="post" action="{{ url_for('logout') }}" class="d-inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-outline-secondary btn-sm">🚪 Logout</button>
+      </form>
+      {% endif %}
     </div>
 
   </div>

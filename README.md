@@ -114,12 +114,13 @@ Open in browser: http://localhost:5000
 
 ## 🔒 Web login
 
-The web interface is protected by a login (HTTP Basic Auth), because anyone who can open it can send APRS packets under your callsign.
+The web interface is protected by a login page, because anyone who can open it can send APRS packets under your callsign. After 5 failed attempts a client has to wait 5 minutes.
 
 - Username: `admin` (change with the environment variable `WEB_USERNAME`)
 - Password: set it with the environment variable `WEB_PASSWORD`. If it is not set, a random password is generated on first start, printed to the log and stored in `web_password.txt` next to `config.json` (in Docker: `/data/web_password.txt`).
+- "Stay logged in" keeps you logged in for 30 days, also across restarts (the session key is stored in `secret_key.txt`).
 
-Basic Auth sends the password unencrypted over plain HTTP. If the app is reachable from outside your home network, put it behind a reverse proxy with HTTPS (e.g. Caddy, Traefik, nginx).
+Over plain HTTP the password is sent unencrypted. If the app is reachable from outside your home network, put it behind a reverse proxy with HTTPS (e.g. Caddy, Traefik, nginx).
 
 ---
 

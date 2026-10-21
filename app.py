@@ -9,10 +9,10 @@ import threading
 import time
 import unicodedata
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import aprslib
-from flask import Flask, Response, abort, flash, request, redirect, render_template, session, url_for
+from flask import Flask, abort, flash, request, redirect, render_template, session, url_for
 
 app = Flask(__name__)
 APP_VERSION = os.environ.get("APP_VERSION", "dev")
@@ -20,14 +20,20 @@ CONFIG_FILE = os.environ.get("CONFIG_FILE", "config.json")
 BEACONS_FILE = os.environ.get("BEACONS_FILE", "beacons.json")
 DATA_DIR = os.path.dirname(os.path.abspath(CONFIG_FILE))
 PASSWORD_FILE = os.environ.get("WEB_PASSWORD_FILE", os.path.join(DATA_DIR, "web_password.txt"))
+SECRET_KEY_FILE = os.environ.get("SECRET_KEY_FILE", os.path.join(DATA_DIR, "secret_key.txt"))
 WEB_USERNAME = os.environ.get("WEB_USERNAME", "admin")
 SEND_INTERVAL = int(os.environ.get("SEND_INTERVAL", "300"))  # seconds between automatic transmissions
 HOST = os.environ.get("HOST", "0.0.0.0")
 PORT = int(os.environ.get("PORT", "5000"))
 
-# Session only holds the CSRF token, so a fresh key per process is fine.
-app.secret_key = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
-app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Strict")
+LOGIN_MAX_FAILURES = 5    # failed logins per client ...
+LOGIN_LOCK_SECONDS = 300  # ... before it has to wait this long
+
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    PERMANENT_SESSION_LIFETIME=timedelta(days=30),
+)
 
 # Guards every read-modify-write of the JSON files (web requests + sender thread).
 data_lock = threading.RLock()
@@ -191,6 +197,19 @@ def get_web_password():
     _web_password = password
     return password
 
+def load_secret_key():
+    """Persist the session key, so logins survive a restart."""
+    key = os.environ.get("SECRET_KEY", "")
+    if not key and os.path.exists(SECRET_KEY_FILE):
+        with open(SECRET_KEY_FILE, "r") as f:
+            key = f.read().strip()
+    if not key:
+        key = secrets.token_hex(32)
+        write_file_atomic(SECRET_KEY_FILE, key + "\n")
+    return key
+
+app.secret_key = load_secret_key()
+
 def csrf_token():
     if "csrf_token" not in session:
         session["csrf_token"] = secrets.token_urlsafe(32)
@@ -198,25 +217,50 @@ def csrf_token():
 
 app.jinja_env.globals["csrf_token"] = csrf_token
 
+# Failed logins per client address: {ip: (count, time of last failure)}
+login_failures = {}
+login_failures_lock = threading.Lock()
+
+def login_locked(ip):
+    with login_failures_lock:
+        count, last = login_failures.get(ip, (0, 0))
+        if count >= LOGIN_MAX_FAILURES and time.time() - last < LOGIN_LOCK_SECONDS:
+            return True
+        if count >= LOGIN_MAX_FAILURES:
+            del login_failures[ip]
+        return False
+
+def record_login_failure(ip):
+    with login_failures_lock:
+        count, _ = login_failures.get(ip, (0, 0))
+        login_failures[ip] = (count + 1, time.time())
+
+def check_credentials(username, password):
+    user_ok = hmac.compare_digest(username.encode(), WEB_USERNAME.encode())
+    password_ok = hmac.compare_digest(password.encode(), get_web_password().encode())
+    return user_ok and password_ok
+
+def safe_next_url(target):
+    """Only allow redirects to local paths after login (no open redirect)."""
+    if target and target.startswith("/") and not target.startswith("//") and "\\" not in target:
+        return target
+    return url_for("index")
+
 @app.before_request
-def check_auth_and_csrf():
+def check_login_and_csrf():
     if request.endpoint == "static":
         return None
-    auth = request.authorization
-    valid = (
-        auth is not None
-        and auth.type == "basic"
-        and hmac.compare_digest((auth.username or "").encode(), WEB_USERNAME.encode())
-        and hmac.compare_digest((auth.password or "").encode(), get_web_password().encode())
-    )
-    if not valid:
-        return Response("Login required", 401, {"WWW-Authenticate": 'Basic realm="lightAPRSinjector"'})
     if request.method == "POST":
         sent = request.form.get("csrf_token", "")
         expected = session.get("csrf_token", "")
         if not expected or not hmac.compare_digest(sent.encode(), expected.encode()):
+            if request.endpoint == "login":
+                flash("Your session expired. Please try again.", "warning")
+                return redirect(url_for("login"))
             abort(400, "Invalid or expired form token. Please reload the page and try again.")
-    return None
+    if request.endpoint == "login" or session.get("user") == WEB_USERNAME:
+        return None
+    return redirect(url_for("login", next=request.full_path if request.query_string else request.path))
 
 @app.after_request
 def set_security_headers(response):
@@ -308,6 +352,36 @@ def auto_sender():
         time.sleep(SEND_INTERVAL)
 
 # ==================== Web-Gui ====================
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    next_url = safe_next_url(request.values.get("next"))
+    if session.get("user") == WEB_USERNAME:
+        return redirect(next_url)
+
+    if request.method == "POST":
+        ip = request.remote_addr or "?"
+        username = request.form.get("username", "")
+        if login_locked(ip):
+            flash(f"Too many failed attempts. Please wait {LOGIN_LOCK_SECONDS // 60} minutes.", "danger")
+        elif check_credentials(username, request.form.get("password", "")):
+            session.clear()  # new session after login (no session fixation)
+            session["user"] = WEB_USERNAME
+            session.permanent = "remember" in request.form
+            return redirect(next_url)
+        else:
+            record_login_failure(ip)
+            print(f"Failed login for '{username}' from {ip}", flush=True)
+            flash("Wrong username or password.", "danger")
+        return render_template("login.html", next=next_url, username=username), 401
+
+    return render_template("login.html", next=next_url, username="")
+
+@app.route("/logout", methods=["POST"])
+def logout():
+    session.clear()
+    flash("You have been logged out.", "success")
+    return redirect(url_for("login"))
 
 @app.route("/")
 def index():

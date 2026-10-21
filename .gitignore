@@ -2,6 +2,7 @@
 config.json
 beacons.json
 web_password.txt
+secret_key.txt
 .tmp-*
 
 __pycache__/

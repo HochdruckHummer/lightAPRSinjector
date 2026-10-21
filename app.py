@@ -12,7 +12,12 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 import aprslib
-from flask import Flask, abort, flash, request, redirect, render_template, session, url_for
+from aprslib.exceptions import ConnectionError as APRSConnectionError, LoginError
+from flask import (Flask, abort, flash, jsonify, request, redirect, render_template, session,
+                   url_for)
+
+from i18n import LANGUAGES, _, get_language, js_translations
+from symbols import SYMBOLS, SYMBOLS_BY_CODE, symbol_image
 
 app = Flask(__name__)
 APP_VERSION = os.environ.get("APP_VERSION", "dev")
@@ -51,6 +56,19 @@ HOST_RE = re.compile(r"^[A-Za-z0-9.-]{1,253}$")
 OBJECT_NAME_MAX = 9
 NAME_MAX = 50
 TEXT_MAX = 100
+TEXT_RECOMMENDED = 43  # APRS comment length most devices display
+
+# Result of the last transmission per beacon id (kept in memory):
+# {"time": epoch, "ok": bool, "error": English message or None, "detail": str}
+send_status = {}
+send_status_lock = threading.Lock()
+next_auto_send = 0.0
+
+# Status errors, translated when shown
+ERR_INVALID_POSITION = "Invalid position"
+ERR_LOGIN = "Login rejected – check callsign and passcode"
+ERR_UNREACHABLE = "APRS-IS server not reachable"
+ERR_SEND = "Sending failed"
 
 # ==================== Helper functions ====================
 
@@ -134,34 +152,34 @@ def beacon_from_form(form, beacon_id=None):
     errors = []
     beacon_type = form.get("type", "beacon")
     if beacon_type not in ("beacon", "object"):
-        errors.append("Invalid type.")
+        errors.append(_("Invalid type."))
         beacon_type = "beacon"
 
     name = clean_text(form.get("name"))
     if not name:
-        errors.append("Name is required.")
+        errors.append(_("Name is required."))
     elif beacon_type == "object":
         if len(name) > OBJECT_NAME_MAX:
-            errors.append(f"Object names may have at most {OBJECT_NAME_MAX} characters.")
+            errors.append(_("Object names may have at most {n} characters.", n=OBJECT_NAME_MAX))
         elif not all(0x20 <= ord(c) <= 0x7E for c in name):
-            errors.append("Object names may only contain ASCII characters.")
+            errors.append(_("Object names may only contain ASCII characters."))
     elif len(name) > NAME_MAX:
-        errors.append(f"Name may have at most {NAME_MAX} characters.")
+        errors.append(_("Name may have at most {n} characters.", n=NAME_MAX))
 
     text = clean_text(form.get("text"))
     if len(text) > TEXT_MAX:
-        errors.append(f"Text may have at most {TEXT_MAX} characters.")
+        errors.append(_("Text may have at most {n} characters.", n=TEXT_MAX))
 
     position = form.get("position", "").strip()
     try:
         lat, lon = parse_position(position)
         position = f"{lat:.6f},{lon:.6f}"
     except ValueError:
-        errors.append("Position must be 'latitude,longitude' in decimal degrees, e.g. 52.2450,8.9057.")
+        errors.append(_("Position must be 'latitude,longitude' in decimal degrees, e.g. 52.2450,8.9057."))
 
     symbol = form.get("symbol", "")
     if not is_valid_symbol(symbol):
-        errors.append("Please choose a symbol.")
+        errors.append(_("Please choose a symbol."))
 
     beacon = {
         "id": beacon_id or uuid.uuid4().hex,
@@ -173,6 +191,28 @@ def beacon_from_form(form, beacon_id=None):
         "active": "active" in form,
     }
     return beacon, errors
+
+def config_from_form(form, current):
+    """Build the APRS-IS config from submitted form data. Returns (config, errors)."""
+    errors = []
+    callsign = form.get("callsign", "").strip().upper()
+    if not CALLSIGN_RE.match(callsign):
+        errors.append(_("Invalid callsign (e.g. DL8YDP or DL8YDP-9)."))
+    # An empty passcode field keeps the stored passcode (it is never sent to the browser).
+    passcode = form.get("passcode", "").strip() or str(current.get("passcode", ""))
+    if not PASSCODE_RE.match(passcode):
+        errors.append(_("Passcode must be a number."))
+    server = form.get("server", "").strip()
+    if not HOST_RE.match(server):
+        errors.append(_("Invalid server name."))
+    try:
+        port = int(form.get("port", ""))
+        if not 1 <= port <= 65535:
+            raise ValueError
+    except ValueError:
+        errors.append(_("Port must be a number between 1 and 65535."))
+        port = form.get("port", "")
+    return {"callsign": callsign, "passcode": passcode, "server": server, "port": port}, errors
 
 # ==================== Security ====================
 
@@ -215,8 +255,6 @@ def csrf_token():
         session["csrf_token"] = secrets.token_urlsafe(32)
     return session["csrf_token"]
 
-app.jinja_env.globals["csrf_token"] = csrf_token
-
 # Failed logins per client address: {ip: (count, time of last failure)}
 login_failures = {}
 login_failures_lock = threading.Lock()
@@ -232,7 +270,7 @@ def login_locked(ip):
 
 def record_login_failure(ip):
     with login_failures_lock:
-        count, _ = login_failures.get(ip, (0, 0))
+        count, _unused = login_failures.get(ip, (0, 0))
         login_failures[ip] = (count + 1, time.time())
 
 def check_credentials(username, password):
@@ -241,10 +279,12 @@ def check_credentials(username, password):
     return user_ok and password_ok
 
 def safe_next_url(target):
-    """Only allow redirects to local paths after login (no open redirect)."""
+    """Only allow redirects to local paths (no open redirect)."""
     if target and target.startswith("/") and not target.startswith("//") and "\\" not in target:
         return target
     return url_for("index")
+
+PUBLIC_ENDPOINTS = ("static", "login", "set_language")
 
 @app.before_request
 def check_login_and_csrf():
@@ -255,11 +295,13 @@ def check_login_and_csrf():
         expected = session.get("csrf_token", "")
         if not expected or not hmac.compare_digest(sent.encode(), expected.encode()):
             if request.endpoint == "login":
-                flash("Your session expired. Please try again.", "warning")
+                flash(_("Your session expired. Please try again."), "warning")
                 return redirect(url_for("login"))
             abort(400, "Invalid or expired form token. Please reload the page and try again.")
-    if request.endpoint == "login" or session.get("user") == WEB_USERNAME:
+    if request.endpoint in PUBLIC_ENDPOINTS or session.get("user") == WEB_USERNAME:
         return None
+    if request.path.startswith("/api/"):
+        return jsonify({"error": "login required"}), 401
     return redirect(url_for("login", next=request.full_path if request.query_string else request.path))
 
 @app.after_request
@@ -268,6 +310,39 @@ def set_security_headers(response):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "same-origin"
     return response
+
+# ==================== Template helpers ====================
+
+def symbol_name(code):
+    symbol = SYMBOLS_BY_CODE.get(code)
+    return symbol["names"].get(get_language(), symbol["names"]["en"]) if symbol else code
+
+def status_for_client(beacon_id):
+    """Last transmission of a beacon with translated error text, or None."""
+    with send_status_lock:
+        status = dict(send_status.get(beacon_id) or {})
+    if not status:
+        return None
+    if status.get("error"):
+        status["error"] = _(status["error"])
+    return status
+
+@app.context_processor
+def template_globals():
+    return {
+        "_": _,
+        "csrf_token": csrf_token,
+        "lang": get_language(),
+        "languages": LANGUAGES,
+        "js_i18n": js_translations(),
+        "symbol_name": symbol_name,
+        "symbol_image": symbol_image,
+        "text_recommended": TEXT_RECOMMENDED,
+        "text_max": TEXT_MAX,
+        "object_name_max": OBJECT_NAME_MAX,
+        "name_max": NAME_MAX,
+        "send_interval": SEND_INTERVAL,
+    }
 
 # ==================== APRS-Sending ====================
 
@@ -305,32 +380,55 @@ def build_packet(beacon, callsign, kill=False):
         body = f"={pos}{symbol}{text}"
     return f"{callsign}>APRS,TCPIP*:{body}"
 
+def aprs_connection(config):
+    return aprslib.IS(
+        clean_text(config["callsign"]).upper(),
+        passwd=str(config["passcode"]),
+        host=config["server"],
+        port=int(config["port"])
+    )
+
+def describe_error(exc):
+    """Map an exception from aprslib to a short status message (English, translated later)."""
+    if isinstance(exc, LoginError):
+        return ERR_LOGIN
+    if isinstance(exc, (APRSConnectionError, OSError)):
+        return ERR_UNREACHABLE
+    return ERR_SEND
+
+def record_status(beacon_ids, ok, error=None, detail=""):
+    now = time.time()
+    with send_status_lock:
+        for beacon_id in beacon_ids:
+            send_status[beacon_id] = {"time": now, "ok": ok, "error": error, "detail": detail}
+
 def send_beacons(beacons, config, kill=False):
     """Send several beacons over one APRS-IS connection. Returns True on success."""
     callsign = clean_text(config["callsign"]).upper()
     packets = []
     for beacon in beacons:
         try:
-            packets.append(build_packet(beacon, callsign, kill=kill))
+            packets.append((beacon.get("id"), build_packet(beacon, callsign, kill=kill)))
         except ValueError:
             print(f"Invalid position for '{beacon.get('name', '?')}': {beacon.get('position')}", flush=True)
+            if not kill:
+                record_status([beacon.get("id")], False, ERR_INVALID_POSITION)
     if not packets:
         return False
 
-    conn = aprslib.IS(
-        callsign,
-        passwd=str(config["passcode"]),
-        host=config["server"],
-        port=int(config["port"])
-    )
+    conn = aprs_connection(config)
     try:
         conn.connect()
-        for packet in packets:
+        for beacon_id, packet in packets:
             conn.sendall(packet)
             print(f"Sent: {packet}", flush=True)
+            if not kill:
+                record_status([beacon_id], True)
         return True
     except Exception as e:
         print(f"Error when sending to APRS-IS: {e}", flush=True)
+        if not kill:
+            record_status([beacon_id for beacon_id, _packet in packets], False, describe_error(e), str(e))
         return False
     finally:
         conn.close()
@@ -341,6 +439,7 @@ def send_kill_if_object(beacon, config):
         send_beacons([beacon], config, kill=True)
 
 def auto_sender():
+    global next_auto_send
     while True:
         try:
             config = load_config()
@@ -349,9 +448,17 @@ def auto_sender():
         except Exception as e:
             # Never let a bad file or network error stop the sender for good.
             print(f"Error in automatic sender: {e}", flush=True)
+        next_auto_send = time.time() + SEND_INTERVAL
         time.sleep(SEND_INTERVAL)
 
 # ==================== Web-Gui ====================
+
+@app.route("/lang/<code>")
+def set_language(code):
+    response = redirect(safe_next_url(request.args.get("next")))
+    if code in LANGUAGES:
+        response.set_cookie("lang", code, max_age=365 * 24 * 3600, samesite="Lax", httponly=True)
+    return response
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -363,7 +470,7 @@ def login():
         ip = request.remote_addr or "?"
         username = request.form.get("username", "")
         if login_locked(ip):
-            flash(f"Too many failed attempts. Please wait {LOGIN_LOCK_SECONDS // 60} minutes.", "danger")
+            flash(_("Too many failed attempts. Please wait {n} minutes.", n=LOGIN_LOCK_SECONDS // 60), "danger")
         elif check_credentials(username, request.form.get("password", "")):
             session.clear()  # new session after login (no session fixation)
             session["user"] = WEB_USERNAME
@@ -372,7 +479,7 @@ def login():
         else:
             record_login_failure(ip)
             print(f"Failed login for '{username}' from {ip}", flush=True)
-            flash("Wrong username or password.", "danger")
+            flash(_("Wrong username or password."), "danger")
         return render_template("login.html", next=next_url, username=username), 401
 
     return render_template("login.html", next=next_url, username="")
@@ -380,45 +487,88 @@ def login():
 @app.route("/logout", methods=["POST"])
 def logout():
     session.clear()
-    flash("You have been logged out.", "success")
+    flash(_("You have been logged out."), "success")
     return redirect(url_for("login"))
 
 @app.route("/")
 def index():
     config = load_config()
     beacons = load_beacons()
-    return render_template("index.html", config=config, beacons=beacons, version=APP_VERSION)
+    map_items = []
+    for b in beacons:
+        try:
+            lat, lon = parse_position(b.get("position"))
+        except ValueError:
+            continue
+        image = symbol_image(b.get("symbol"))
+        map_items.append({
+            "id": b["id"], "name": b.get("name", ""), "text": b.get("text", ""),
+            "lat": lat, "lon": lon, "active": b.get("active", True),
+            "icon": url_for("static", filename=f"symbols/{image}") if image else None,
+        })
+    statuses = {b["id"]: status_for_client(b["id"]) for b in beacons}
+    return render_template("index.html", config=config, beacons=beacons, version=APP_VERSION,
+                           map_items=map_items, statuses=statuses)
+
+@app.route("/api/status")
+def api_status():
+    beacons = load_beacons()
+    return jsonify({
+        "now": time.time(),
+        "next_send": next_auto_send,
+        "interval": SEND_INTERVAL,
+        "beacons": {b["id"]: status_for_client(b["id"]) for b in beacons},
+    })
+
+@app.route("/api/preview")
+def api_preview():
+    """The packet the current form values would produce."""
+    beacon = {
+        "name": request.args.get("name", ""),
+        "text": request.args.get("text", ""),
+        "position": request.args.get("position", ""),
+        "symbol": request.args.get("symbol", ""),
+        "type": request.args.get("type", "beacon"),
+    }
+    if not is_valid_symbol(beacon["symbol"]):
+        return jsonify({"error": _("Please choose a symbol.")})
+    try:
+        packet = build_packet(beacon, clean_text(load_config()["callsign"]).upper())
+    except ValueError:
+        return jsonify({"error": _("Enter a valid position or click on the map.")})
+    return jsonify({"packet": packet})
+
+@app.route("/api/test-connection", methods=["POST"])
+def api_test_connection():
+    """Log in to APRS-IS with the values from the config form, without saving them."""
+    cfg, errors = config_from_form(request.form, load_config())
+    if errors:
+        return jsonify({"ok": False, "message": " ".join(errors)})
+    conn = aprs_connection(cfg)
+    try:
+        conn.connect()
+        return jsonify({"ok": True, "message": _("Connected and logged in as {call} at {server}:{port}.",
+                                                 call=cfg["callsign"], server=cfg["server"], port=cfg["port"])})
+    except LoginError:
+        return jsonify({"ok": False, "message": _("The server rejected the login. Check callsign and passcode.")})
+    except Exception as e:
+        print(f"Connection test failed: {e}", flush=True)
+        return jsonify({"ok": False, "message": _("Could not connect to {server}:{port}.",
+                                                  server=cfg["server"], port=cfg["port"])})
+    finally:
+        conn.close()
 
 @app.route("/config", methods=["GET", "POST"])
 def config_page():
     if request.method == "POST":
         with data_lock:
             current = load_config()
-            errors = []
-            callsign = request.form.get("callsign", "").strip().upper()
-            if not CALLSIGN_RE.match(callsign):
-                errors.append("Invalid callsign (e.g. DL8YDP or DL8YDP-9).")
-            # An empty passcode field keeps the stored passcode (it is never sent to the browser).
-            passcode = request.form.get("passcode", "").strip() or str(current.get("passcode", ""))
-            if not PASSCODE_RE.match(passcode):
-                errors.append("Passcode must be a number.")
-            server = request.form.get("server", "").strip()
-            if not HOST_RE.match(server):
-                errors.append("Invalid server name.")
-            try:
-                port = int(request.form.get("port", ""))
-                if not 1 <= port <= 65535:
-                    raise ValueError
-            except ValueError:
-                errors.append("Port must be a number between 1 and 65535.")
-                port = request.form.get("port", "")
-
-            cfg = {"callsign": callsign, "passcode": passcode, "server": server, "port": port}
+            cfg, errors = config_from_form(request.form, current)
             if errors:
                 return render_template("config.html", config=cfg, errors=errors,
                                        has_passcode=bool(current.get("passcode"))), 400
             save_config(cfg)
-        flash("Configuration saved.", "success")
+        flash(_("Configuration saved."), "success")
         return redirect(url_for("index"))
 
     config = load_config()
@@ -429,13 +579,14 @@ def new_beacon():
     if request.method == "POST":
         beacon, errors = beacon_from_form(request.form)
         if errors:
-            return render_template("new.html", beacon=beacon, errors=errors), 400
+            return render_template("new.html", beacon=beacon, errors=errors, symbols=SYMBOLS), 400
         with data_lock:
             beacons = load_beacons()
             beacons.append(beacon)
             save_beacons(beacons)
+        flash(_("'{name}' created.", name=beacon["name"]), "success")
         return redirect(url_for("index"))
-    return render_template("new.html", beacon={"active": True})
+    return render_template("new.html", beacon={"active": True, "type": "beacon"}, symbols=SYMBOLS)
 
 @app.route("/toggle/<beacon_id>", methods=["POST"])
 def toggle_beacon(beacon_id):
@@ -458,9 +609,10 @@ def send_once(beacon_id):
     if idx is None:
         abort(404)
     if send_beacons([beacons[idx]], load_config()):
-        flash(f"'{beacons[idx]['name']}' sent.", "success")
+        flash(_("'{name}' sent.", name=beacons[idx]["name"]), "success")
     else:
-        flash(f"Sending '{beacons[idx]['name']}' failed, see log.", "danger")
+        flash(_("Sending '{name}' failed: {error}", name=beacons[idx]["name"],
+                error=(status_for_client(beacon_id) or {}).get("error", "")), "danger")
     return redirect(url_for("index"))
 
 @app.route("/edit/<beacon_id>", methods=["GET", "POST"])
@@ -473,7 +625,7 @@ def edit_beacon(beacon_id):
     if request.method == "POST":
         beacon, errors = beacon_from_form(request.form, beacon_id=beacon_id)
         if errors:
-            return render_template("edit.html", beacon=beacon, errors=errors), 400
+            return render_template("edit.html", beacon=beacon, errors=errors, symbols=SYMBOLS), 400
         with data_lock:
             beacons = load_beacons()
             idx = find_beacon(beacons, beacon_id)
@@ -481,9 +633,10 @@ def edit_beacon(beacon_id):
                 abort(404)
             beacons[idx] = beacon
             save_beacons(beacons)
+        flash(_("'{name}' saved.", name=beacon["name"]), "success")
         return redirect(url_for("index"))
 
-    return render_template("edit.html", beacon=beacons[idx])
+    return render_template("edit.html", beacon=beacons[idx], symbols=SYMBOLS)
 
 @app.route("/delete/<beacon_id>", methods=["POST"])
 def delete_beacon(beacon_id):
@@ -494,7 +647,10 @@ def delete_beacon(beacon_id):
             abort(404)
         beacon = beacons.pop(idx)
         save_beacons(beacons)
+    with send_status_lock:
+        send_status.pop(beacon_id, None)
     send_kill_if_object(beacon, load_config())
+    flash(_("'{name}' deleted.", name=beacon["name"]), "success")
     return redirect(url_for("index"))
 
 if __name__ == "__main__":

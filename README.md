@@ -8,7 +8,9 @@ A lightweight Flask web application to manage and send APRS position beacons and
 
 - Send APRS position beacons or objects over APRS-IS  
 - Symbol support using `/` and `\` tables (e.g., `/E` = Eyeball, `\E` = Smokestack)  
-- Web interface for configuration and beacon management  
+- Web interface for configuration and beacon management, in English and German  
+- Overview map, live send status and countdown to the next transmission  
+- Symbol picker with search, character counter and live packet preview  
 - Supports manual and scheduled transmissions (every 5 minutes)  
 - Built with Flask, `aprslib` and Bootstrap.
 
@@ -156,16 +158,19 @@ If `beacons.json` does not exist, it will be created automatically when adding y
 
 <img width="691" height="786" alt="Screenshot_new_APRS_beacon_or_object" src="https://github.com/user-attachments/assets/21b5d3ce-31ef-40ef-b545-b5bb2ff26d9a" />
 
-- **Edit config:** Set callsign, passcode, server and port
+- **Overview:** all entries on a map and in a list with status (active/inactive), the result of the last transmission and a countdown to the next automatic run
+- **Edit config:** Set callsign, passcode, server and port, and check them with **Test connection**
 - **Add beacon or object:**
-  - Name: max 9 characters (for APRS objects)
-  - Position: latitude and longitude separated by comma (e.g. `52.2450,8.9057`) or selected on map
-  - Symbol: select from 190 possible APRS symbols
-  - Text: description (max 43 characters recommended)
-  - Type: choose beacon or object
-- **Toggle Active:** Enable/disable specific entries
+  - Type: beacon (your own position) or object (a marker with its own name)
+  - Name: max 9 characters for APRS objects
+  - Position: latitude and longitude separated by comma (e.g. `52.2450,8.9057`) or selected on the map
+  - Symbol: pick from about 170 APRS symbols, searchable by name in English and German
+  - Text: description with a character counter (max 43 characters recommended)
+  - Packet preview: shows exactly what will be sent
+- **Toggle Active:** Enable/disable specific entries with the switch
 - **Send Now:** Immediately transmit a beacon or object
-- **Edit/Delete:** Modify or remove existing entries
+- **Edit/Delete:** Modify or remove existing entries (in the ⋯ menu)
+- **Language:** switch between English and German with the EN/DE buttons in the header
 
 ---
 

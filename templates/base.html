@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="de" data-bs-theme="auto">
+<html lang="{{ lang }}" data-bs-theme="auto">
 <head>
   <meta charset="utf-8">
   <title>{% block title %}lightAPRSinjector{% endblock %}</title>
@@ -21,42 +21,73 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
 
+  <style>
+    /* APRS symbols are 16px pixel art: scale them up without blurring */
+    .aprs-symbol { image-rendering: pixelated; width: 32px; height: 32px; flex-shrink: 0; }
+    .aprs-symbol-sm { image-rendering: pixelated; width: 24px; height: 24px; }
+  </style>
+
+  <script>
+    // Translated texts for scripts, and a tiny helper: t('Sent {time}', {time: '…'})
+    window.APP = { lang: {{ lang|tojson }}, i18n: {{ js_i18n|tojson }} };
+    window.t = (key, values) => {
+      let text = (window.APP.i18n[key] !== undefined) ? window.APP.i18n[key] : key;
+      for (const [name, value] of Object.entries(values || {})) {
+        text = text.split('{' + name + '}').join(value);
+      }
+      return text;
+    };
+  </script>
+
   {% block head %}{% endblock %}
 </head>
 <body class="container py-4">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="h3">{% block header %}lightAPRSinjector{% endblock %}</h1>
+  <header class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-1">
+    <h1 class="h3 mb-0">
+      <a href="{{ url_for('index') }}" class="text-body text-decoration-none">lightAPRSinjector</a>
+    </h1>
 
-    <div class="d-flex gap-1">
+    <div class="d-flex flex-wrap gap-1">
       {% if session.get('user') %}
-      <a href="{{ url_for('config_page') }}" class="btn btn-outline-secondary btn-sm">⚙️ Configuration</a>
+      <a href="{{ url_for('config_page') }}" class="btn btn-outline-secondary btn-sm">⚙️ {{ _("Configuration") }}</a>
       {% endif %}
-      <button id="themeToggle" class="btn btn-outline-secondary btn-sm">🌓 Darkmode</button>
+      <div class="btn-group btn-group-sm" role="group" aria-label="{{ _('Language') }}">
+        {% for code in languages %}
+        <a href="{{ url_for('set_language', code=code, next=request.full_path if request.query_string else request.path) }}"
+           class="btn {{ 'btn-secondary' if code == lang else 'btn-outline-secondary' }}"
+           title="{{ languages[code] }}" {% if code == lang %}aria-current="true"{% endif %}>{{ code|upper }}</a>
+        {% endfor %}
+      </div>
+      <button id="themeToggle" class="btn btn-outline-secondary btn-sm">🌓 {{ _("Dark mode") }}</button>
       {% if session.get('user') %}
       <form method="post" action="{{ url_for('logout') }}" class="d-inline">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="btn btn-outline-secondary btn-sm">🚪 Logout</button>
+        <button class="btn btn-outline-secondary btn-sm">🚪 {{ _("Logout") }}</button>
       </form>
       {% endif %}
     </div>
-
-  </div>
-<p>a lightweight APRS Beacon and Object Manager by DL8YDP</p>
+  </header>
+  <p class="text-body-secondary mb-4">{{ _("a lightweight APRS Beacon and Object Manager by DL8YDP") }}</p>
 
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% for category, message in messages %}
-    <div class="alert alert-{{ category }}">{{ message }}</div>
+    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ _('Close') }}"></button>
+    </div>
     {% endfor %}
   {% endwith %}
   {% if errors %}
-  <div class="alert alert-danger">
+  <div class="alert alert-danger" role="alert">
     <ul class="mb-0">
       {% for e in errors %}<li>{{ e }}</li>{% endfor %}
     </ul>
   </div>
   {% endif %}
+
   {% block content %}{% endblock %}
 
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
   <script>
     const toggleBtn = document.getElementById("themeToggle");
     toggleBtn.addEventListener("click", () => {
@@ -67,5 +98,6 @@
       localStorage.setItem("theme", next);
     });
   </script>
+  {% block scripts %}{% endblock %}
 </body>
 </html>

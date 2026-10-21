@@ -1,0 +1,309 @@
+{# Shared form for creating and editing beacons/objects. Expects: beacon, symbols, form_action, submit_label #}
+<style>
+  #symbol-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(42px, 1fr));
+    gap: 4px;
+    max-height: 260px;
+    overflow-y: auto;
+    padding: 2px;
+    position: relative;
+  }
+  .symbol-choice {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 42px;
+    padding: 0;
+    background: transparent;
+    border: 2px solid transparent;
+    border-radius: 6px;
+  }
+  .symbol-choice:hover { background: var(--bs-tertiary-bg); }
+  .symbol-choice:focus-visible { outline: 2px solid var(--bs-primary); outline-offset: 1px; }
+  .symbol-choice.selected {
+    border-color: var(--bs-primary);
+    background: var(--bs-primary-bg-subtle);
+  }
+  #map { height: 300px; }
+</style>
+
+{% set selected_image = symbol_image(beacon.symbol) %}
+{% set selected_table = 'alternate' if beacon.symbol and beacon.symbol[0] == '\\' else 'primary' %}
+
+<form method="post" action="{{ form_action }}" id="beacon-form" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <div class="mb-3">
+        <label for="type" class="form-label">{{ _("Type") }}</label>
+        <select class="form-select" id="type" name="type">
+          <option value="beacon" {% if beacon.type != 'object' %}selected{% endif %}>{{ _("Beacon") }}</option>
+          <option value="object" {% if beacon.type == 'object' %}selected{% endif %}>{{ _("Object") }}</option>
+        </select>
+        <div class="form-text" id="type-help-beacon">{{ _("A position report for your own station, sent with your callsign.") }}</div>
+        <div class="form-text d-none" id="type-help-object">{{ _("A marker for something else, e.g. an event, a club station or a repeater. It appears on the map under its own name.") }}</div>
+      </div>
+
+      <div class="mb-3">
+        <label for="name" class="form-label">{{ _("Name") }}</label>
+        <input type="text" class="form-control" id="name" name="name" value="{{ beacon.name }}" required>
+        <div class="form-text d-flex justify-content-between gap-2">
+          <span id="name-help"></span>
+          <span id="name-counter" class="text-nowrap"></span>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="text" class="form-label">{{ _("Text") }}</label>
+        <input type="text" class="form-control" id="text" name="text" value="{{ beacon.text }}" maxlength="{{ text_max }}">
+        <div class="form-text d-flex justify-content-between gap-2">
+          <span id="text-warning" class="text-warning-emphasis d-none">
+            {{ _("Longer than {n} characters – many devices cut off the rest.", n=text_recommended) }}
+          </span>
+          <span id="text-counter" class="ms-auto text-nowrap"></span>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="position" class="form-label">{{ _("Position (Lat,Lon)") }}</label>
+        <input type="text" class="form-control" id="position" name="position" placeholder="52.245000,8.905700"
+               value="{{ beacon.position }}" inputmode="decimal" required>
+        <div class="form-text">{{ _("Click on the map or drag the marker to set the position.") }}</div>
+      </div>
+
+      <div id="map" class="mb-3 rounded border"></div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="mb-3">
+        <label class="form-label" for="symbol-search">{{ _("Symbol") }}</label>
+        <input type="hidden" name="symbol" id="symbol" value="{{ beacon.symbol }}">
+
+        <div class="d-flex align-items-center gap-2 mb-2 p-2 border rounded" id="selected-symbol">
+          <img id="selected-symbol-img" class="aprs-symbol {% if not selected_image %}d-none{% endif %}" alt=""
+               src="{{ url_for('static', filename='symbols/' ~ selected_image) if selected_image else '' }}">
+          <span id="selected-symbol-name">{{ symbol_name(beacon.symbol) if beacon.symbol else _("No symbol selected") }}</span>
+          <code id="selected-symbol-code" class="ms-auto">{{ beacon.symbol }}</code>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 mb-2">
+          <input type="search" id="symbol-search" class="form-control form-control-sm flex-grow-1" style="max-width: 260px"
+                 placeholder="{{ _('Search symbols, e.g. house') }}" autocomplete="off">
+          <div class="btn-group btn-group-sm" role="group" aria-label="{{ _('Symbol table') }}">
+            <button type="button" class="btn btn-outline-secondary symbol-table-btn" data-table="primary">{{ _("Primary") }} /</button>
+            <button type="button" class="btn btn-outline-secondary symbol-table-btn" data-table="alternate">{{ _("Alternate") }} \</button>
+          </div>
+        </div>
+
+        <div id="symbol-grid" class="border rounded">
+          {% for s in symbols %}
+          {% set name = s.names[lang] or s.names.en %}
+          <button type="button" class="symbol-choice {% if s.code == beacon.symbol %}selected{% endif %}"
+                  data-symbol="{{ s.code }}" data-table="{{ s.table }}" data-name="{{ name }}"
+                  data-search="{{ (s.names.en ~ ' ' ~ s.names.de ~ ' ' ~ s.code)|lower }}"
+                  title="{{ name }} ({{ s.code }})" aria-label="{{ name }}"
+                  aria-pressed="{{ 'true' if s.code == beacon.symbol else 'false' }}">
+            <img src="{{ url_for('static', filename='symbols/' ~ s.file) }}" class="aprs-symbol-sm" alt="" loading="lazy">
+          </button>
+          {% endfor %}
+        </div>
+        <div id="symbol-empty" class="small text-body-secondary d-none mt-2">{{ _("No symbols found.") }}</div>
+      </div>
+
+      <div class="mb-3">
+        <div class="form-label">{{ _("Packet preview") }}</div>
+        <div class="p-2 border rounded bg-body-tertiary">
+          <code id="packet-preview" class="text-break small"></code>
+        </div>
+        <div class="form-text">{{ _("This is exactly what will be sent to APRS-IS.") }}</div>
+      </div>
+
+      <div class="form-check form-switch mb-4">
+        <input class="form-check-input" type="checkbox" role="switch" id="active" name="active" {% if beacon.active %}checked{% endif %}>
+        <label class="form-check-label" for="active">{{ _("Active (sent automatically every {n} minutes)", n=(send_interval / 60)|round|int) }}</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex gap-2">
+    <button type="submit" class="btn btn-primary">{{ submit_label }}</button>
+    <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">{{ _("Cancel") }}</a>
+  </div>
+</form>
+
+<script>
+(() => {
+  const TEXT_RECOMMENDED = {{ text_recommended }};
+  const OBJECT_NAME_MAX = {{ object_name_max }};
+  const NAME_MAX = {{ name_max }};
+  const PREVIEW_URL = {{ url_for('api_preview')|tojson }};
+
+  const typeSelect = document.getElementById('type');
+  const nameInput = document.getElementById('name');
+  const textInput = document.getElementById('text');
+  const positionInput = document.getElementById('position');
+  const symbolInput = document.getElementById('symbol');
+
+  // ---- Type dependent hints and name length ----
+  function updateType() {
+    const isObject = typeSelect.value === 'object';
+    document.getElementById('type-help-beacon').classList.toggle('d-none', isObject);
+    document.getElementById('type-help-object').classList.toggle('d-none', !isObject);
+    nameInput.maxLength = isObject ? OBJECT_NAME_MAX : NAME_MAX;
+    document.getElementById('name-help').textContent = isObject
+      ? t('Shown on the map. Letters, digits and spaces, max. {n}.', {n: OBJECT_NAME_MAX})
+      : t('Only shown in this list, for your overview.');
+    updateCounters();
+  }
+
+  function updateCounters() {
+    const isObject = typeSelect.value === 'object';
+    const nameCounter = document.getElementById('name-counter');
+    nameCounter.textContent = isObject ? t('{n} / {max} characters', {n: nameInput.value.length, max: OBJECT_NAME_MAX}) : '';
+
+    const len = textInput.value.length;
+    const tooLong = len > TEXT_RECOMMENDED;
+    const textCounter = document.getElementById('text-counter');
+    textCounter.textContent = t('{n} / {max} characters', {n: len, max: TEXT_RECOMMENDED});
+    textCounter.classList.toggle('text-warning-emphasis', tooLong);
+    textCounter.classList.toggle('fw-semibold', tooLong);
+    document.getElementById('text-warning').classList.toggle('d-none', !tooLong);
+  }
+
+  // ---- Packet preview (built by the server, so it matches what is sent) ----
+  let previewTimer = null;
+  let previewRequest = 0;
+  function schedulePreview() {
+    clearTimeout(previewTimer);
+    previewTimer = setTimeout(updatePreview, 250);
+  }
+  async function updatePreview() {
+    const params = new URLSearchParams({
+      name: nameInput.value, text: textInput.value, position: positionInput.value,
+      symbol: symbolInput.value, type: typeSelect.value,
+    });
+    const requestId = ++previewRequest;
+    const preview = document.getElementById('packet-preview');
+    try {
+      const response = await fetch(PREVIEW_URL + '?' + params.toString(), {headers: {'Accept': 'application/json'}});
+      const data = await response.json();
+      if (requestId !== previewRequest) return;  // a newer request is on its way
+      preview.textContent = data.packet || data.error || '';
+      preview.classList.toggle('text-body-secondary', !data.packet);
+    } catch (e) {
+      if (requestId === previewRequest) preview.textContent = '';
+    }
+  }
+
+  [typeSelect, nameInput, textInput, positionInput].forEach(el => {
+    el.addEventListener('input', () => { updateCounters(); schedulePreview(); });
+  });
+  typeSelect.addEventListener('change', () => { updateType(); schedulePreview(); });
+
+  // ---- Symbol picker ----
+  const grid = document.getElementById('symbol-grid');
+  const choices = Array.from(grid.querySelectorAll('.symbol-choice'));
+  const searchInput = document.getElementById('symbol-search');
+  const tableButtons = Array.from(document.querySelectorAll('.symbol-table-btn'));
+  let currentTable = {{ selected_table|tojson }};
+
+  function filterSymbols() {
+    const query = searchInput.value.trim().toLowerCase();
+    let visible = 0;
+    choices.forEach(el => {
+      // While searching, look in both tables
+      const show = query ? el.dataset.search.includes(query) : el.dataset.table === currentTable;
+      el.classList.toggle('d-none', !show);
+      if (show) visible++;
+    });
+    tableButtons.forEach(btn => {
+      const active = !query && btn.dataset.table === currentTable;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+    document.getElementById('symbol-empty').classList.toggle('d-none', visible > 0);
+  }
+
+  function selectSymbol(el) {
+    symbolInput.value = el.dataset.symbol;
+    choices.forEach(c => {
+      c.classList.toggle('selected', c === el);
+      c.setAttribute('aria-pressed', c === el ? 'true' : 'false');
+    });
+    const img = document.getElementById('selected-symbol-img');
+    img.src = el.querySelector('img').src;
+    img.classList.remove('d-none');
+    document.getElementById('selected-symbol-name').textContent = el.dataset.name;
+    document.getElementById('selected-symbol-code').textContent = el.dataset.symbol;
+    if (marker) marker.setIcon(markerIconFor(img.src));
+    schedulePreview();
+  }
+
+  choices.forEach(el => el.addEventListener('click', () => selectSymbol(el)));
+  tableButtons.forEach(btn => btn.addEventListener('click', () => {
+    currentTable = btn.dataset.table;
+    searchInput.value = '';
+    filterSymbols();
+  }));
+  searchInput.addEventListener('input', filterSymbols);
+  // Enter in the search field picks the first hit instead of submitting the form
+  searchInput.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const first = choices.find(el => !el.classList.contains('d-none'));
+    if (first) selectSymbol(first);
+  });
+
+  // ---- Map ----
+  const map = L.map('map').setView([51.0, 10.0], 6);  // Start centered on Germany
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  let marker = null;
+  const markerIconFor = src => L.icon({iconUrl: src, iconSize: [32, 32], iconAnchor: [16, 16], className: 'aprs-symbol-sm'});
+
+  function setMarker(latlng) {
+    if (!marker) {
+      const img = document.getElementById('selected-symbol-img');
+      const options = {draggable: true};
+      if (img.getAttribute('src')) options.icon = markerIconFor(img.src);
+      marker = L.marker(latlng, options).addTo(map);
+      marker.on('dragend', () => {
+        const pos = marker.getLatLng();
+        positionInput.value = `${pos.lat.toFixed(6)},${pos.lng.toFixed(6)}`;
+        schedulePreview();
+      });
+    } else {
+      marker.setLatLng(latlng);
+    }
+  }
+
+  function showPositionFromInput(zoom) {
+    const [lat, lng] = positionInput.value.split(',').map(s => parseFloat(s));
+    if (!isNaN(lat) && !isNaN(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+      setMarker([lat, lng]);
+      map.setView([lat, lng], zoom || map.getZoom());
+    }
+  }
+
+  map.on('click', e => {
+    setMarker(e.latlng);
+    positionInput.value = `${e.latlng.lat.toFixed(6)},${e.latlng.lng.toFixed(6)}`;
+    updateCounters();
+    schedulePreview();
+  });
+  positionInput.addEventListener('change', () => showPositionFromInput(13));
+
+  // ---- Initial state ----
+  if (positionInput.value) showPositionFromInput(13);
+  filterSymbols();
+  updateType();
+  updatePreview();
+  // Scroll only the grid (not the page) to the selected symbol
+  const selected = grid.querySelector('.symbol-choice.selected');
+  if (selected) grid.scrollTop = selected.offsetTop - grid.clientHeight / 2;
+})();
+</script>

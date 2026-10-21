@@ -1,42 +1,58 @@
 {% extends "base.html" %}
 
-{% block title %}Configuration{% endblock %}
+{% block title %}{{ _("Configuration") }} – lightAPRSinjector{% endblock %}
 
 {% block content %}
-<h1>Configuration</h1>
+<h2 class="h4 mb-3">{{ _("Configuration") }}</h2>
 
-<form method="post">
+<div class="row">
+<div class="col-lg-7">
+<form method="post" id="config-form">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <div class="mb-3">
-    <label for="callsign" class="form-label">Callsign</label>
-    <input type="text" name="callsign" id="callsign" class="form-control" value="{{ config.callsign }}">
+    <label for="callsign" class="form-label">{{ _("Callsign") }}</label>
+    <input type="text" name="callsign" id="callsign" class="form-control" value="{{ config.callsign }}"
+           autocapitalize="characters" required>
+    <div class="form-text">{{ _("Your callsign, optionally with SSID, e.g. DL8YDP or DL8YDP-9.") }}</div>
   </div>
   <div class="mb-3">
-    <label for="passcode" class="form-label">Passcode</label>
+    <label for="passcode" class="form-label">{{ _("Passcode") }}</label>
     <div class="input-group">
       <input type="password" name="passcode" id="passcode" class="form-control" autocomplete="off"
-             placeholder="{{ 'Stored – leave empty to keep' if has_passcode else '' }}">
+             placeholder="{{ _('Stored – leave empty to keep') if has_passcode else '' }}">
       <button type="button" class="btn btn-outline-secondary" onclick="generatePasscode()">
-        Generate from Callsign
+        {{ _("Generate from callsign") }}
       </button>
     </div>
     <div class="form-text">
-      Passcode is calculated locally from your callsign.
-      If the result seems wrong, you can also generate it manually
-      <a href="https://apps.magicbug.co.uk/passcode/" target="_blank" rel="noopener">here</a>.
+      {{ _("The passcode is calculated locally from your callsign.") }}
+      {{ _("If the result seems wrong, you can also generate it manually") }}
+      <a href="https://apps.magicbug.co.uk/passcode/" target="_blank" rel="noopener">{{ _("here") }}</a>.
     </div>
   </div>
   <div class="mb-3">
-    <label for="server" class="form-label">Server</label>
-    <input type="text" name="server" id="server" class="form-control" value="{{ config.server }}">
+    <label for="server" class="form-label">{{ _("Server") }}</label>
+    <input type="text" name="server" id="server" class="form-control" value="{{ config.server }}" required>
   </div>
   <div class="mb-3">
-    <label for="port" class="form-label">Port</label>
-    <input type="number" name="port" id="port" class="form-control" value="{{ config.port }}">
+    <label for="port" class="form-label">{{ _("Port") }}</label>
+    <input type="number" name="port" id="port" class="form-control" value="{{ config.port }}" min="1" max="65535" required>
   </div>
-  <button type="submit" class="btn btn-primary">Save</button>
-  <a href="{{ url_for('index') }}" class="btn btn-secondary">Back</a>
+
+  <div id="test-result" class="alert d-none" role="status"></div>
+
+  <div class="d-flex flex-wrap gap-2">
+    <button type="submit" class="btn btn-primary">{{ _("Save") }}</button>
+    <button type="button" class="btn btn-outline-primary" id="test-connection">🔌 {{ _("Test connection") }}</button>
+    <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">{{ _("Cancel") }}</a>
+  </div>
 </form>
+</div>
+</div>
+
+<p class="small text-body-secondary mt-4">
+  {{ _("Active entries are sent automatically every {n} minutes (environment variable SEND_INTERVAL).", n=(send_interval / 60)|round|int) }}
+</p>
 
 <script>
 function generatePasscode() {
@@ -44,7 +60,7 @@ function generatePasscode() {
   const base = callsign.split("-")[0]; // strip SSID
 
   if (!base) {
-    alert("Please enter a callsign first.");
+    alert(t("Please enter a callsign first."));
     return;
   }
 
@@ -65,5 +81,28 @@ function generatePasscode() {
     document.getElementById("passcode").type = "password";
   }, 3000);
 }
+
+document.getElementById("test-connection").addEventListener("click", async (e) => {
+  const button = e.currentTarget;
+  const result = document.getElementById("test-result");
+  button.disabled = true;
+  result.className = "alert alert-secondary";
+  result.textContent = t("Testing connection…");
+  try {
+    const response = await fetch({{ url_for('api_test_connection')|tojson }}, {
+      method: "POST",
+      body: new FormData(document.getElementById("config-form")),
+      headers: {"Accept": "application/json"},
+    });
+    const data = await response.json();
+    result.className = "alert " + (data.ok ? "alert-success" : "alert-danger");
+    result.textContent = (data.ok ? "✓ " : "✗ ") + data.message;
+  } catch (err) {
+    result.className = "alert alert-danger";
+    result.textContent = "✗ " + t("The test could not be run. Please reload the page.");
+  } finally {
+    button.disabled = false;
+  }
+});
 </script>
 {% endblock %}

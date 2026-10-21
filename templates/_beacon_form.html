@@ -102,7 +102,7 @@
           {% set name = s.names[lang] or s.names.en %}
           <button type="button" class="symbol-choice {% if s.code == beacon.symbol %}selected{% endif %}"
                   data-symbol="{{ s.code }}" data-table="{{ s.table }}" data-name="{{ name }}"
-                  data-search="{{ (s.names.en ~ ' ' ~ s.names.de ~ ' ' ~ s.code)|lower }}"
+                  data-search="{{ (s.names.en ~ ' ' ~ s.names.de ~ ' ' ~ s.keywords ~ ' ' ~ s.code)|lower }}"
                   title="{{ name }} ({{ s.code }})" aria-label="{{ name }}"
                   aria-pressed="{{ 'true' if s.code == beacon.symbol else 'false' }}">
             <img src="{{ url_for('static', filename='symbols/' ~ s.file) }}" class="aprs-symbol-sm" alt="" loading="lazy">

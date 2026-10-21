@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <!-- Bootstrap 5 -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
 
   <!-- Dark Mode Script -->
   <script>
@@ -18,8 +18,8 @@
     })();
   </script>
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
 
   {% block head %}{% endblock %}
 </head>
@@ -33,6 +33,19 @@
 
   </div>
 <p>a lightweight APRS Beacon and Object Manager by DL8YDP</p>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}
+  {% endwith %}
+  {% if errors %}
+  <div class="alert alert-danger">
+    <ul class="mb-0">
+      {% for e in errors %}<li>{{ e }}</li>{% endfor %}
+    </ul>
+  </div>
+  {% endif %}
   {% block content %}{% endblock %}
 
   <script>

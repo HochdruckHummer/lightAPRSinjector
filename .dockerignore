@@ -1,0 +1,9 @@
+.git
+.github
+venv
+.venv
+__pycache__
+*.pyc
+config.json
+beacons.json
+web_password.txt

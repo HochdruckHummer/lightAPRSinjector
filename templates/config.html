@@ -6,6 +6,7 @@
 <h1>Configuration</h1>
 
 <form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <div class="mb-3">
     <label for="callsign" class="form-label">Callsign</label>
     <input type="text" name="callsign" id="callsign" class="form-control" value="{{ config.callsign }}">
@@ -13,7 +14,8 @@
   <div class="mb-3">
     <label for="passcode" class="form-label">Passcode</label>
     <div class="input-group">
-      <input type="password" name="passcode" id="passcode" class="form-control" value="{{ config.passcode }}">
+      <input type="password" name="passcode" id="passcode" class="form-control" autocomplete="off"
+             placeholder="{{ 'Stored – leave empty to keep' if has_passcode else '' }}">
       <button type="button" class="btn btn-outline-secondary" onclick="generatePasscode()">
         Generate from Callsign
       </button>

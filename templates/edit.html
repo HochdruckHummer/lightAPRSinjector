@@ -29,7 +29,8 @@
 
 <h1>Edit APRS item</h1>
 
-<form method="post" action="/edit/{{ index }}">
+<form method="post" action="{{ url_for('edit_beacon', beacon_id=beacon.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <div class="mb-3">
     <label class="form-label">Name</label>
     <input name="name" value="{{ beacon.name }}" class="form-control">
@@ -329,9 +330,6 @@
   <div class="col">
     <img src="/static/symbols/symbols094.png" data-symbol="/~" class="img-thumbnail symbol-choice" title="/~ symbol">
   </div>
-  <div class="col">
-    <img src="/static/symbols/symbols095.png" data-symbol="/" class="img-thumbnail symbol-choice" title="/ symbol">
-  </div>
 <!-- Zweite Gruppe mit \ -->
 <div class="col">
 <img src="/static/symbols/symbols2001.png" data-symbol="\!" class="img-thumbnail symbol-choice" title="\! symbol">
@@ -614,9 +612,6 @@
 </div>
 <div class="col">
 <img src="/static/symbols/symbols2094.png" data-symbol="\~" class="img-thumbnail symbol-choice" title="\~ symbol">
-</div>
-<div class="col">
-<img src="/static/symbols/symbols2095.png" data-symbol="\" class="img-thumbnail symbol-choice" title="\ symbol">
 </div>
   </div>
   <div class="form-text">Click to choose a symbol</div>

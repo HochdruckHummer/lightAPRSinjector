@@ -38,6 +38,12 @@ docker compose up -d
 
 http://localhost:5000
 
+Log in with user `admin` and the password shown in the container log on first start:
+```bash
+docker compose logs lightaprsinjektor | grep "web login"
+```
+See [Web login](#-web-login) to choose your own password.
+
 Config and beacon data are stored in a persistent Docker volume (`aprs_data`), so your settings survive container restarts and updates.
 
 **To update to the latest version:**
@@ -106,6 +112,17 @@ Open in browser: http://localhost:5000
 
 ---
 
+## 🔒 Web login
+
+The web interface is protected by a login (HTTP Basic Auth), because anyone who can open it can send APRS packets under your callsign.
+
+- Username: `admin` (change with the environment variable `WEB_USERNAME`)
+- Password: set it with the environment variable `WEB_PASSWORD`. If it is not set, a random password is generated on first start, printed to the log and stored in `web_password.txt` next to `config.json` (in Docker: `/data/web_password.txt`).
+
+Basic Auth sends the password unencrypted over plain HTTP. If the app is reachable from outside your home network, put it behind a reverse proxy with HTTPS (e.g. Caddy, Traefik, nginx).
+
+---
+
 ## ⚙️ Configuration
 
 On first launch, open the web interface and set your callsign, APRS-IS passcode, server and port via the **Configuration** page.
@@ -128,7 +145,7 @@ Alternatively, create a `config.json` manually in the same directory as `app.py`
 | `server` | APRS-IS server, e.g. `euro.aprs2.net` |
 | `port` | Default: `14580` |
 
-If `beacons.json` does not exist, it will be created automatically when adding your first beacon.
+If `beacons.json` does not exist, it will be created automatically when adding your first beacon. Both files are listed in `.gitignore`, so your passcode does not end up in a commit.
 
 ---
 
@@ -155,10 +172,9 @@ If `beacons.json` does not exist, it will be created automatically when adding y
 
 A background thread automatically transmits all active entries every 5 minutes.
 
-To change the interval, edit `app.py`:
-```python
-SEND_INTERVAL = 300  # seconds
-```
+To change the interval, set the environment variable `SEND_INTERVAL` (in seconds), e.g. `SEND_INTERVAL=600`. For fixed stations and objects, 10–30 minutes is the usual courtesy on APRS-IS.
+
+When an active object is deactivated or deleted, a kill packet is sent so it disappears from maps like aprs.fi right away.
 
 ---
 

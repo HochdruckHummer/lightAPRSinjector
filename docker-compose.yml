@@ -1,11 +1,17 @@
 services:
   lightaprsinjektor:
-    image: lightaprsinjektor
+    image: ghcr.io/hochdruckhummer/lightaprsinjektor:latest
     build: .
     container_name: lightaprsinjektor
     restart: unless-stopped
     ports:
       - "5000:5000"
+    environment:
+      # Login for the web interface. If WEB_PASSWORD is not set, a random
+      # password is generated on first start and printed to the container log.
+      - WEB_USERNAME=admin
+      # - WEB_PASSWORD=change-me
+      # - SEND_INTERVAL=600
     volumes:
       - aprs_data:/data
 

@@ -1,0 +1,10 @@
+# Runtime data (contains your passcode and web password)
+config.json
+beacons.json
+web_password.txt
+.tmp-*
+
+__pycache__/
+*.pyc
+venv/
+.venv/

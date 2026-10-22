@@ -1,17 +1,19 @@
 # lightAPRSinjector - a lightweight APRS Beacon and Object Manager by DL8YDP
 
-A lightweight Flask web application to manage and send APRS position beacons and objects via APRS-IS. Designed for amateur radio operators, it offers a modern and simple (Bootstrap) web interface to add, edit, activate, and send APRS data using configurable symbols (e.g., `/E` or `\E`), coordinates, and texts.
+A lightweight Flask web application to manage and send APRS position beacons and objects via APRS-IS and – in beta – on radio through a KISS TNC such as Direwolf. Designed for amateur radio operators, it offers a modern and simple (Bootstrap) web interface to add, edit, activate, and send APRS data using configurable symbols (e.g., `/E` or `\E`), coordinates, and texts.
 
 <img width="976" height="475" alt="Bildschirmfoto 2025-08-01 um 11 55 50" src="https://github.com/user-attachments/assets/737dfff7-fae9-4475-9c8b-cc628c6e0e15" />
 
 ## ✨ Features
 
 - Send APRS position beacons or objects over APRS-IS  
+- **Beta:** send them on radio (e.g. 144.800 MHz) through a KISS TNC such as Direwolf – per entry via Internet, radio or both  
 - Symbol support using `/` and `\` tables (e.g., `/E` = Eyeball, `\E` = Smokestack)  
-- Web interface for configuration and beacon management, in English and German  
-- Overview map, live send status and countdown to the next transmission  
+- Web interface for configuration and beacon management, in English and German, protected by a login  
+- Overview map, live send status per channel and countdown to the next transmission  
 - Symbol picker with search, character counter and live packet preview  
-- Supports manual and scheduled transmissions (every 5 minutes)  
+- Manual and scheduled transmissions, with separate intervals for Internet and radio  
+- Kill packets remove deactivated or deleted objects from the maps  
 - Built with Flask, `aprslib` and Bootstrap.
 
 ---
@@ -128,27 +130,49 @@ Over plain HTTP the password is sent unencrypted. If the app is reachable from o
 
 ## ⚙️ Configuration
 
-On first launch, open the web interface and set your callsign, APRS-IS passcode, server and port via the **Configuration** page.
+On first launch, open the web interface and set your callsign, APRS-IS passcode, server and port via the **Configuration** page. **Test connection** checks server, callsign and passcode without saving. The settings for radio are in the same page, see [Sending on radio](#-sending-on-radio-beta).
 
-Alternatively, create a `config.json` manually in the same directory as `app.py`:
+Alternatively, create a `config.json` manually in the same directory as `app.py` (in Docker: `/data/config.json`):
 
 ```json
 {
   "callsign": "DL8YDP",
   "passcode": "12345",
   "server": "euro.aprs2.net",
-  "port": 14580
+  "port": 14580,
+  "rf_enabled": false,
+  "kiss_host": "",
+  "kiss_port": 8001,
+  "rf_path": "WIDE2-1",
+  "rf_interval": 30
 }
 ```
 
 | Field | Description |
 |---|---|
-| `callsign` | Your full APRS callsign (e.g. `DL8YDP` or `DL8YDP-9`) |
-| `passcode` | Your APRS-IS passcode – generate it [here](https://apps.magicbug.co.uk/passcode/) |
+| `callsign` | Your full APRS callsign (e.g. `DL8YDP` or `DL8YDP-9`). On radio the SSID must be a number from 0 to 15. |
+| `passcode` | Your APRS-IS passcode – the configuration page can calculate it, or generate it [here](https://apps.magicbug.co.uk/passcode/) |
 | `server` | APRS-IS server, e.g. `euro.aprs2.net` |
 | `port` | Default: `14580` |
+| `rf_enabled` | Send on radio (beta). Default: `false` |
+| `kiss_host` | Address of the machine running the KISS TNC (Direwolf) |
+| `kiss_port` | KISS TCP port of the TNC. Default: `8001` |
+| `rf_path` | Digipeater path, max. 2 entries. Default: `WIDE2-1` (fixed station); `WIDE1-1,WIDE2-1` for mobile; empty for none |
+| `rf_interval` | Minutes between automatic radio transmissions, 10–120. Default: `30` |
 
 If `beacons.json` does not exist, it will be created automatically when adding your first beacon. Both files are listed in `.gitignore`, so your passcode does not end up in a commit.
+
+### Environment variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `WEB_USERNAME` | `admin` | Username for the web login |
+| `WEB_PASSWORD` | generated | Password for the web login (see [Web login](#-web-login)) |
+| `SEND_INTERVAL` | `300` | Seconds between automatic transmissions via APRS-IS |
+| `CONFIG_FILE` | `config.json` (Docker: `/data/config.json`) | Location of the configuration |
+| `BEACONS_FILE` | `beacons.json` (Docker: `/data/beacons.json`) | Location of the beacons and objects |
+| `HOST` / `PORT` | `0.0.0.0` / `5000` | Address and port of the web interface |
+| `SECRET_KEY` | generated | Key for login sessions; stored in `secret_key.txt` if not set |
 
 ---
 
@@ -158,17 +182,18 @@ If `beacons.json` does not exist, it will be created automatically when adding y
 
 <img width="691" height="786" alt="Screenshot_new_APRS_beacon_or_object" src="https://github.com/user-attachments/assets/21b5d3ce-31ef-40ef-b545-b5bb2ff26d9a" />
 
-- **Overview:** all entries on a map and in a list with status (active/inactive), the result of the last transmission and a countdown to the next automatic run
-- **Edit config:** Set callsign, passcode, server and port, and check them with **Test connection**
+- **Overview:** all entries on a map and in a list with status (active/inactive), the result of the last transmission per channel (🌐 Internet, 📻 radio) and a countdown to the next automatic run
+- **Edit config:** Set callsign, passcode, server and port, and check them with **Test connection**; set up radio and check it with **Test TNC connection** (nothing is transmitted)
 - **Add beacon or object:**
   - Type: beacon (your own position) or object (a marker with its own name)
   - Name: max 9 characters for APRS objects
   - Position: latitude and longitude separated by comma (e.g. `52.2450,8.9057`) or selected on the map
   - Symbol: pick from about 170 APRS symbols, searchable by name in English and German
   - Text: description with a character counter (max 43 characters recommended)
-  - Packet preview: shows exactly what will be sent
+  - Send via: 🌐 Internet (APRS-IS), 📻 radio (beta), or both
+  - Packet preview: shows exactly what will be sent on each channel
 - **Toggle Active:** Enable/disable specific entries with the switch
-- **Send Now:** Immediately transmit a beacon or object
+- **Send Now:** Immediately transmit a beacon or object on all its channels
 - **Edit/Delete:** Modify or remove existing entries (in the ⋯ menu)
 - **Language:** switch between English and German with the EN/DE buttons in the header
 
@@ -176,11 +201,16 @@ If `beacons.json` does not exist, it will be created automatically when adding y
 
 ## 🔁 Auto Transmission
 
-A background thread automatically transmits all active entries every 5 minutes.
+A background thread automatically transmits all active entries, with a separate interval per channel:
 
-To change the interval, set the environment variable `SEND_INTERVAL` (in seconds), e.g. `SEND_INTERVAL=600`. For fixed stations and objects, 10–30 minutes is the usual courtesy on APRS-IS.
+| Channel | Default | Change with |
+|---|---|---|
+| 🌐 Internet (APRS-IS) | every 5 minutes | environment variable `SEND_INTERVAL` (in seconds), e.g. `SEND_INTERVAL=600` |
+| 📻 Radio (beta) | every 30 minutes | **Configuration → Radio interval** (10–120 minutes) |
 
-When an active object is deactivated or deleted, a kill packet is sent so it disappears from maps like aprs.fi right away.
+For fixed stations and objects, 10–30 minutes is the usual courtesy on APRS-IS. On radio, 144.800 MHz is a shared, slow channel, so the minimum there is 10 minutes.
+
+When an active object is deactivated or deleted, a kill packet is sent on all its channels so it disappears from maps like aprs.fi right away.
 
 ---
 
@@ -188,17 +218,29 @@ When an active object is deactivated or deleted, a kill packet is sent so it dis
 
 Besides APRS-IS, lightAPRSinjector can send beacons and objects on 144.800 MHz through a
 KISS TNC such as Direwolf. Direwolf runs on a computer next to the radio; lightAPRSinjector
-connects to it over the network. Each entry can be sent via Internet, radio or both, and
-radio has its own, longer interval.
+connects to it over the network, so the two can be in different places (e.g. the server in
+the basement, the radio in the attic).
 
-See [direwolf/README.md](direwolf/README.md) for the setup, including example
-configurations for the Yaesu FT-991A and for handhelds with an AIOC cable.
+```
+lightAPRSinjector  ──LAN, TCP 8001──►  Direwolf  ──USB──►  radio
+```
+
+1. Set up Direwolf next to the radio – see [direwolf/README.md](direwolf/README.md), with
+   example configurations for the Yaesu FT-991A and for handhelds with an AIOC cable.
+2. In **Configuration → Radio (KISS TNC)**: enter the TNC address and port, check it with
+   **Test TNC connection**, choose path and interval, switch on **Send on radio**.
+3. In each beacon or object, tick **📻 Radio** under *Send via*.
+
+> ⚠️ **Beta:** tested against Direwolf, but not yet with every radio. Check your first
+> transmissions with a second receiver or on [aprs.fi](https://aprs.fi). Direwolf's KISS
+> port has no password – keep it inside your network (see the setup guide).
 
 ---
 
 ## 🛠️ Notes
 
 - APRS object names are limited to 9 characters
+- On radio the callsign SSID must be a number from 0 to 15 (e.g. `DL8YDP-10`)
 - Symbol codes consist of two characters: `/` or `\` plus the actual symbol (e.g. `/E`)
 - The first character determines the symbol table; the second is the symbol itself
 

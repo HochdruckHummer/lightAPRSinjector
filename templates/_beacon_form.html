@@ -113,16 +113,38 @@
       </div>
 
       <div class="mb-3">
+        <div class="form-label">{{ _("Send via") }}</div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input via-choice" type="checkbox" id="via-internet" name="via" value="internet"
+                 {% if 'internet' in (beacon.via or []) %}checked{% endif %}>
+          <label class="form-check-label" for="via-internet">🌐 {{ _("Internet (APRS-IS)") }}</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input via-choice" type="checkbox" id="via-rf" name="via" value="rf"
+                 {% if 'rf' in (beacon.via or []) %}checked{% endif %}>
+          <label class="form-check-label" for="via-rf">📻 {{ _("Radio") }} <span class="badge text-bg-warning">Beta</span></label>
+        </div>
+        {% if not rf_enabled %}
+        <div class="form-text text-warning-emphasis" id="rf-off-hint">
+          {{ _("Radio is switched off in the configuration. Entries marked for radio are only sent there once it is enabled.") }}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="mb-3">
         <div class="form-label">{{ _("Packet preview") }}</div>
         <div class="p-2 border rounded bg-body-tertiary">
-          <code id="packet-preview" class="text-break small"></code>
+          <div id="preview-internet-row"><span class="small text-body-secondary">🌐</span>
+            <code id="packet-preview" class="text-break small"></code></div>
+          <div id="preview-rf-row" class="mt-1"><span class="small text-body-secondary">📻</span>
+            <code id="packet-preview-rf" class="text-break small"></code></div>
         </div>
-        <div class="form-text">{{ _("This is exactly what will be sent to APRS-IS.") }}</div>
+        <div class="form-text">{{ _("This is exactly what will be sent.") }}</div>
       </div>
 
       <div class="form-check form-switch mb-4">
         <input class="form-check-input" type="checkbox" role="switch" id="active" name="active" {% if beacon.active %}checked{% endif %}>
-        <label class="form-check-label" for="active">{{ _("Active (sent automatically every {n} minutes)", n=(send_interval / 60)|round|int) }}</label>
+        <label class="form-check-label" for="active">{{ _("Active (sent automatically)") }}</label>
       </div>
     </div>
   </div>
@@ -190,12 +212,27 @@
       const response = await fetch(PREVIEW_URL + '?' + params.toString(), {headers: {'Accept': 'application/json'}});
       const data = await response.json();
       if (requestId !== previewRequest) return;  // a newer request is on its way
-      preview.textContent = data.packet || data.error || '';
-      preview.classList.toggle('text-body-secondary', !data.packet);
+      const previewRf = document.getElementById('packet-preview-rf');
+      preview.textContent = data.internet || data.error || '';
+      preview.classList.toggle('text-body-secondary', !data.internet);
+      previewRf.textContent = data.rf || '';
+      lastPreviewError = !!data.error;
+      updatePreviewRows();
     } catch (e) {
       if (requestId === previewRequest) preview.textContent = '';
     }
   }
+
+  // Show only the packets for the chosen ways to send (errors always in the first row)
+  let lastPreviewError = false;
+  function updatePreviewRows() {
+    const isError = lastPreviewError;
+    const internet = document.getElementById('via-internet').checked;
+    const rf = document.getElementById('via-rf').checked;
+    document.getElementById('preview-internet-row').classList.toggle('d-none', !isError && !internet && rf);
+    document.getElementById('preview-rf-row').classList.toggle('d-none', isError || !rf);
+  }
+  document.querySelectorAll('.via-choice').forEach(el => el.addEventListener('change', updatePreviewRows));
 
   [typeSelect, nameInput, textInput, positionInput].forEach(el => {
     el.addEventListener('input', () => { updateCounters(); schedulePreview(); });

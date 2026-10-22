@@ -184,6 +184,18 @@ When an active object is deactivated or deleted, a kill packet is sent so it dis
 
 ---
 
+## 📻 Sending on radio (beta)
+
+Besides APRS-IS, lightAPRSinjector can send beacons and objects on 144.800 MHz through a
+KISS TNC such as Direwolf. Direwolf runs on a computer next to the radio; lightAPRSinjector
+connects to it over the network. Each entry can be sent via Internet, radio or both, and
+radio has its own, longer interval.
+
+See [direwolf/README.md](direwolf/README.md) for the setup, including example
+configurations for the Yaesu FT-991A and for handhelds with an AIOC cable.
+
+---
+
 ## 🛠️ Notes
 
 - APRS object names are limited to 9 characters

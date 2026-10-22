@@ -13,11 +13,12 @@ LANGUAGES = {"en": "English", "de": "Deutsch"}
 JS_STRINGS = [
     'Do you really want to delete "{name}"?',
     "Failed {time}: {error}",
-    "Next automatic transmission in {time}",
+    "Next automatic transmission: {times}",
     "Not sent yet",
+    "Not sent: radio is switched off",
+    "now",
     "Only shown in this list, for your overview.",
     "Please enter a callsign first.",
-    "Sending now…",
     "Sent {time}",
     "Shown on the map. Letters, digits and spaces, max. {n}.",
     "Testing connection…",
@@ -81,19 +82,26 @@ TRANSLATIONS = {
         "Not sent yet": "Noch nicht gesendet",
         "Sent {time}": "Gesendet {time}",
         "Failed {time}: {error}": "Fehlgeschlagen {time}: {error}",
-        "Next automatic transmission in {time}": "Nächste automatische Aussendung in {time}",
-        "Sending now…": "Wird gerade gesendet …",
+        "Next automatic transmission: {times}": "Nächste automatische Aussendung: {times}",
+        "Not sent: radio is switched off": "Nicht gesendet: Funk ist ausgeschaltet",
+        "now": "jetzt",
         "'{name}' created.": "„{name}“ wurde angelegt.",
         "'{name}' saved.": "„{name}“ wurde gespeichert.",
         "'{name}' deleted.": "„{name}“ wurde gelöscht.",
-        "'{name}' sent.": "„{name}“ wurde gesendet.",
-        "Sending '{name}' failed: {error}": "Senden von „{name}“ fehlgeschlagen: {error}",
+        "'{name}' sent ({channel}).": "„{name}“ wurde gesendet ({channel}).",
+        "Sending '{name}' failed ({channel}): {error}": "Senden von „{name}“ fehlgeschlagen ({channel}): {error}",
+        "'{name}' has no active way to send. Radio is switched off in the configuration.":
+            "„{name}“ hat keinen aktiven Sendeweg. Funk ist in der Konfiguration ausgeschaltet.",
+        "Internet": "Internet",
+        "Radio": "Funk",
 
         # Send status errors
         "Invalid position": "Ungültige Position",
         "Login rejected – check callsign and passcode": "Anmeldung abgelehnt – Rufzeichen und Passcode prüfen",
         "APRS-IS server not reachable": "APRS-IS-Server nicht erreichbar",
         "Sending failed": "Senden fehlgeschlagen",
+        "TNC not reachable": "TNC nicht erreichbar",
+        "Callsign not usable on radio (SSID must be 0-15)": "Rufzeichen auf Funk nicht verwendbar (SSID muss 0–15 sein)",
 
         # Beacon form
         "New beacon or object": "Neue Bake oder neues Objekt",
@@ -124,8 +132,13 @@ TRANSLATIONS = {
         "Alternate": "Alternativ",
         "No symbols found.": "Keine Symbole gefunden.",
         "Packet preview": "Paketvorschau",
-        "This is exactly what will be sent to APRS-IS.": "Genau das wird an APRS-IS gesendet.",
-        "Active (sent automatically every {n} minutes)": "Aktiv (wird automatisch alle {n} Minuten gesendet)",
+        "This is exactly what will be sent.": "Genau das wird gesendet.",
+        "Active (sent automatically)": "Aktiv (wird automatisch gesendet)",
+        "Send via": "Senden über",
+        "Internet (APRS-IS)": "Internet (APRS-IS)",
+        "Radio is switched off in the configuration. Entries marked for radio are only sent there once it is enabled.":
+            "Funk ist in der Konfiguration ausgeschaltet. Einträge mit Funk werden dort erst gesendet, wenn er eingeschaltet ist.",
+        "Choose at least one way to send: Internet or radio.": "Wähle mindestens einen Sendeweg: Internet oder Funk.",
         "Enter a valid position or click on the map.": "Gib eine gültige Position ein oder klicke in die Karte.",
 
         # Form validation
@@ -166,6 +179,41 @@ TRANSLATIONS = {
         "Invalid callsign (e.g. DL8YDP or DL8YDP-9).": "Ungültiges Rufzeichen (z. B. DL8YDP oder DL8YDP-9).",
         "Passcode must be a number.": "Der Passcode muss eine Zahl sein.",
         "Invalid server name.": "Ungültiger Servername.",
+
+        # Radio configuration
+        "Radio (KISS TNC)": "Funk (KISS-TNC)",
+        "Setup guide": "Anleitung",
+        "This feature is in beta.": "Diese Funktion ist in der Beta-Phase.",
+        "It has been tested with Direwolf, but not yet with every radio. Check your first transmissions with a second receiver or on aprs.fi, and please report problems on GitHub.":
+            "Sie wurde mit Direwolf getestet, aber noch nicht mit jedem Funkgerät. Prüfe deine ersten Aussendungen mit einem "
+            "zweiten Empfänger oder auf aprs.fi und melde Probleme bitte auf GitHub.",
+        "Sends entries over a TNC such as Direwolf on a computer connected to your radio. It can run anywhere in your network.":
+            "Sendet Einträge über einen TNC wie Direwolf auf einem Rechner, der mit deinem Funkgerät verbunden ist. "
+            "Er kann irgendwo in deinem Netzwerk stehen.",
+        "Send on radio": "Über Funk senden",
+        "TNC address": "TNC-Adresse",
+        "KISS port": "KISS-Port",
+        "Digipeater path": "Digipeater-Pfad",
+        "WIDE2-1 suits a fixed station, WIDE1-1,WIDE2-1 a mobile one. Leave empty to send without digipeaters.":
+            "WIDE2-1 passt für eine feste Station, WIDE1-1,WIDE2-1 für eine mobile. Leer lassen, um ohne Digipeater zu senden.",
+        "Radio interval (minutes)": "Funk-Intervall (Minuten)",
+        "144.800 MHz is shared by everyone. 10 minutes is the minimum, 30 minutes is a good value for fixed beacons and objects.":
+            "144,800 MHz teilen sich alle. 10 Minuten sind das Minimum, 30 Minuten ein guter Wert für feste Baken und Objekte.",
+        "Test TNC connection": "TNC-Verbindung testen",
+        "Only checks the network connection. Nothing is transmitted.": "Prüft nur die Netzwerkverbindung. Es wird nichts gesendet.",
+        "Please enter the address and port of the TNC.": "Bitte gib Adresse und Port des TNC ein.",
+        "Could not connect to the TNC at {host}:{port}. Is Direwolf running?":
+            "Keine Verbindung zum TNC unter {host}:{port}. Läuft Direwolf?",
+        "The TNC at {host}:{port} accepts connections. Nothing was transmitted.":
+            "Der TNC unter {host}:{port} nimmt Verbindungen an. Es wurde nichts gesendet.",
+        "Invalid TNC address.": "Ungültige TNC-Adresse.",
+        "TNC port must be a number between 1 and 65535.": "Der TNC-Port muss eine Zahl zwischen 1 und 65535 sein.",
+        "Invalid path. Use up to {n} entries like WIDE1-1,WIDE2-1, or leave it empty.":
+            "Ungültiger Pfad. Bis zu {n} Einträge wie WIDE1-1,WIDE2-1 verwenden oder leer lassen.",
+        "The radio interval must be between {min} and {max} minutes.":
+            "Das Funk-Intervall muss zwischen {min} und {max} Minuten liegen.",
+        "On radio the SSID must be a number from 0 to 15 (e.g. DL8YDP-10).":
+            "Auf Funk muss die SSID eine Zahl von 0 bis 15 sein (z. B. DL8YDP-10).",
         "Port must be a number between 1 and 65535.": "Der Port muss eine Zahl zwischen 1 und 65535 sein.",
     },
 }

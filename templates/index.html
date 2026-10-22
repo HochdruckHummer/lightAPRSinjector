@@ -158,9 +158,11 @@
 (() => {
   const STATUS_URL = {{ url_for('api_status')|tojson }};
   const mapItems = {{ map_items|tojson }};
-  let statuses = {{ statuses|tojson }};
-  let nextSend = 0;          // server time of the next automatic run
+  let statuses = {{ statuses|tojson }};   // {id: {internet: {...}, rf: {...}}}
+  let channels = {{ channels|tojson }};   // {id: ['internet', 'rf']}
+  let nextSend = {};         // server time of the next automatic run per channel
   let clockOffset = 0;       // server time minus browser time, in seconds
+  const CHANNEL_ICONS = {internet: '🌐', rf: '📻'};
 
   // ---- Relative times ("3 minutes ago" / "vor 3 Minuten") ----
   const rtf = new Intl.RelativeTimeFormat(APP.lang, {numeric: 'auto'});
@@ -173,33 +175,52 @@
     return rtf.format(Math.round(diff / 86400), 'day');
   }
 
+  // One line per channel the entry is sent on, e.g. "🌐 ✓ Sent 3 minutes ago"
   function renderStatuses() {
     document.querySelectorAll('.beacon-status').forEach(el => {
-      const status = statuses[el.dataset.id];
-      el.className = 'beacon-status';
-      el.removeAttribute('title');
-      if (!status) {
-        el.textContent = t('Not sent yet');
-      } else if (status.ok) {
-        el.classList.add('status-ok');
-        el.textContent = '✓ ' + t('Sent {time}', {time: relativeTime(status.time)});
-      } else {
-        el.classList.add('status-error');
-        el.textContent = '✗ ' + t('Failed {time}: {error}', {time: relativeTime(status.time), error: status.error});
-        if (status.detail) el.title = status.detail;
+      const id = el.dataset.id;
+      el.replaceChildren();
+      const list = channels[id] || [];
+      if (!list.length) {
+        el.textContent = t('Not sent: radio is switched off');
+        return;
       }
+      list.forEach((channel, index) => {
+        const status = (statuses[id] || {})[channel];
+        const part = document.createElement('span');
+        part.className = 'me-2 text-nowrap';
+        if (!status) {
+          part.textContent = `${CHANNEL_ICONS[channel]} ` + t('Not sent yet');
+        } else if (status.ok) {
+          part.classList.add('status-ok');
+          part.textContent = `${CHANNEL_ICONS[channel]} ✓ ` + t('Sent {time}', {time: relativeTime(status.time)});
+        } else {
+          part.classList.add('status-error');
+          part.classList.remove('text-nowrap');
+          part.textContent = `${CHANNEL_ICONS[channel]} ✗ ` +
+            t('Failed {time}: {error}', {time: relativeTime(status.time), error: status.error});
+          if (status.detail) part.title = status.detail;
+        }
+        el.appendChild(part);
+      });
     });
+  }
+
+  function formatRemaining(epoch) {
+    const remaining = Math.max(0, Math.round(epoch - (Date.now() / 1000 + clockOffset)));
+    if (remaining === 0) return t('now');
+    const hours = Math.floor(remaining / 3600);
+    const minutes = Math.floor(remaining % 3600 / 60);
+    const seconds = String(remaining % 60).padStart(2, '0');
+    return hours ? `${hours}:${String(minutes).padStart(2, '0')}:${seconds}` : `${minutes}:${seconds}`;
   }
 
   function renderCountdown() {
     const el = document.getElementById('next-send');
-    if (!nextSend) { el.textContent = ''; return; }
-    const remaining = Math.max(0, Math.round(nextSend - (Date.now() / 1000 + clockOffset)));
-    const minutes = Math.floor(remaining / 60);
-    const seconds = String(remaining % 60).padStart(2, '0');
-    el.textContent = remaining > 0
-      ? '⏱️ ' + t('Next automatic transmission in {time}', {time: `${minutes}:${seconds}`})
-      : '📡 ' + t('Sending now…');
+    const parts = Object.entries(nextSend)
+      .filter(([, epoch]) => epoch)
+      .map(([channel, epoch]) => `${CHANNEL_ICONS[channel]} ${formatRemaining(epoch)}`);
+    el.textContent = parts.length ? '⏱️ ' + t('Next automatic transmission: {times}', {times: parts.join('  ·  ')}) : '';
   }
 
   async function refreshStatus() {
@@ -210,6 +231,7 @@
       clockOffset = data.now - Date.now() / 1000;
       nextSend = data.next_send;
       statuses = data.beacons;
+      channels = data.channels;
       renderStatuses();
       renderCountdown();
     } catch (e) { /* keep showing the last known state */ }
@@ -221,7 +243,8 @@
     renderCountdown();
     if (++ticks % 15 === 0) renderStatuses();  // keep "x minutes ago" current
     const now = Date.now();
-    const overdue = nextSend && (Date.now() / 1000 + clockOffset) > nextSend + 3;
+    const serverNow = Date.now() / 1000 + clockOffset;
+    const overdue = Object.values(nextSend).some(epoch => epoch && serverNow > epoch + 8);
     // Every 30 s, and every 5 s while waiting for a run that is due
     if (now - lastRefresh > 30000 || (overdue && now - lastRefresh > 5000)) {
       lastRefresh = now;

@@ -9,6 +9,8 @@
 <div class="col-lg-7">
 <form method="post" id="config-form">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <h3 class="h5">🌐 {{ _("Internet (APRS-IS)") }}</h3>
   <div class="mb-3">
     <label for="callsign" class="form-label">{{ _("Callsign") }}</label>
     <input type="text" name="callsign" id="callsign" class="form-control" value="{{ config.callsign }}"
@@ -40,19 +42,63 @@
   </div>
 
   <div id="test-result" class="alert d-none" role="status"></div>
+  <button type="button" class="btn btn-outline-primary btn-sm" id="test-connection">🔌 {{ _("Test connection") }}</button>
+  <p class="small text-body-secondary mt-2">
+    {{ _("Active entries are sent automatically every {n} minutes (environment variable SEND_INTERVAL).", n=(send_interval / 60)|round|int) }}
+  </p>
 
-  <div class="d-flex flex-wrap gap-2">
+  <h3 class="h5 mt-4 pt-3 border-top">📻 {{ _("Radio (KISS TNC)") }} <span class="badge text-bg-warning align-middle">Beta</span></h3>
+  <p class="small text-body-secondary">
+    {{ _("Sends entries over a TNC such as Direwolf on a computer connected to your radio. It can run anywhere in your network.") }}
+    <a href="https://github.com/HochdruckHummer/lightAPRSinjector/blob/main/direwolf/README.md" target="_blank" rel="noopener">{{ _("Setup guide") }}</a>
+  </p>
+  <div class="alert alert-warning small" role="note">
+    <strong>{{ _("This feature is in beta.") }}</strong>
+    {{ _("It has been tested with Direwolf, but not yet with every radio. Check your first transmissions with a second receiver or on aprs.fi, and please report problems on GitHub.") }}
+  </div>
+
+  <div class="form-check form-switch mb-3">
+    <input class="form-check-input" type="checkbox" role="switch" id="rf_enabled" name="rf_enabled" {% if config.rf_enabled %}checked{% endif %}>
+    <label class="form-check-label" for="rf_enabled">{{ _("Send on radio") }}</label>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-8">
+      <label for="kiss_host" class="form-label">{{ _("TNC address") }}</label>
+      <input type="text" name="kiss_host" id="kiss_host" class="form-control" value="{{ config.kiss_host }}"
+             placeholder="192.168.1.50">
+    </div>
+    <div class="col-4">
+      <label for="kiss_port" class="form-label">{{ _("KISS port") }}</label>
+      <input type="number" name="kiss_port" id="kiss_port" class="form-control" value="{{ config.kiss_port }}" min="1" max="65535">
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <label for="rf_path" class="form-label">{{ _("Digipeater path") }}</label>
+    <input type="text" name="rf_path" id="rf_path" class="form-control" value="{{ config.rf_path }}"
+           placeholder="WIDE2-1" autocapitalize="characters">
+    <div class="form-text">{{ _("WIDE2-1 suits a fixed station, WIDE1-1,WIDE2-1 a mobile one. Leave empty to send without digipeaters.") }}</div>
+  </div>
+
+  <div class="mb-3">
+    <label for="rf_interval" class="form-label">{{ _("Radio interval (minutes)") }}</label>
+    <input type="number" name="rf_interval" id="rf_interval" class="form-control" value="{{ config.rf_interval }}"
+           min="{{ rf_interval_min }}" max="{{ rf_interval_max }}" style="max-width: 10rem">
+    <div class="form-text">{{ _("144.800 MHz is shared by everyone. 10 minutes is the minimum, 30 minutes is a good value for fixed beacons and objects.") }}</div>
+  </div>
+
+  <div id="tnc-result" class="alert d-none" role="status"></div>
+  <button type="button" class="btn btn-outline-primary btn-sm" id="test-tnc">📻 {{ _("Test TNC connection") }}</button>
+  <p class="small text-body-secondary mt-2">{{ _("Only checks the network connection. Nothing is transmitted.") }}</p>
+
+  <div class="d-flex flex-wrap gap-2 mt-4 pt-3 border-top">
     <button type="submit" class="btn btn-primary">{{ _("Save") }}</button>
-    <button type="button" class="btn btn-outline-primary" id="test-connection">🔌 {{ _("Test connection") }}</button>
     <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">{{ _("Cancel") }}</a>
   </div>
 </form>
 </div>
 </div>
-
-<p class="small text-body-secondary mt-4">
-  {{ _("Active entries are sent automatically every {n} minutes (environment variable SEND_INTERVAL).", n=(send_interval / 60)|round|int) }}
-</p>
 
 <script>
 function generatePasscode() {
@@ -82,27 +128,32 @@ function generatePasscode() {
   }, 3000);
 }
 
-document.getElementById("test-connection").addEventListener("click", async (e) => {
-  const button = e.currentTarget;
-  const result = document.getElementById("test-result");
-  button.disabled = true;
-  result.className = "alert alert-secondary";
-  result.textContent = t("Testing connection…");
-  try {
-    const response = await fetch({{ url_for('api_test_connection')|tojson }}, {
-      method: "POST",
-      body: new FormData(document.getElementById("config-form")),
-      headers: {"Accept": "application/json"},
-    });
-    const data = await response.json();
-    result.className = "alert " + (data.ok ? "alert-success" : "alert-danger");
-    result.textContent = (data.ok ? "✓ " : "✗ ") + data.message;
-  } catch (err) {
-    result.className = "alert alert-danger";
-    result.textContent = "✗ " + t("The test could not be run. Please reload the page.");
-  } finally {
-    button.disabled = false;
-  }
-});
+// Run a check on the server with the current form values and show the answer
+function runTest(buttonId, resultId, url) {
+  document.getElementById(buttonId).addEventListener("click", async (e) => {
+    const button = e.currentTarget;
+    const result = document.getElementById(resultId);
+    button.disabled = true;
+    result.className = "alert alert-secondary";
+    result.textContent = t("Testing connection…");
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        body: new FormData(document.getElementById("config-form")),
+        headers: {"Accept": "application/json"},
+      });
+      const data = await response.json();
+      result.className = "alert " + (data.ok ? "alert-success" : "alert-danger");
+      result.textContent = (data.ok ? "✓ " : "✗ ") + data.message;
+    } catch (err) {
+      result.className = "alert alert-danger";
+      result.textContent = "✗ " + t("The test could not be run. Please reload the page.");
+    } finally {
+      button.disabled = false;
+    }
+  });
+}
+runTest("test-connection", "test-result", {{ url_for('api_test_connection')|tojson }});
+runTest("test-tnc", "tnc-result", {{ url_for('api_test_tnc')|tojson }});
 </script>
 {% endblock %}

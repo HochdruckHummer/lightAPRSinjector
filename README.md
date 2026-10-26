@@ -264,7 +264,7 @@ If you like, you can send me a beer via PayPal:
 
 ## 📜 License
 
-This project is licensed under the MIT License.
+This project is licensed under the [MIT License](LICENSE).
 
 ## 📡 Author
 
